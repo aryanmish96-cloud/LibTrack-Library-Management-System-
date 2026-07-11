@@ -1,162 +1,150 @@
-# LibTrack
+# ⚡ LibTrack
 
-A library management REST API built with **FastAPI**, **SQLAlchemy**, and a custom **Binary Search Tree** catalog index.
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F27?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
+[![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
+
+A high-performance library management REST API featuring a custom **in-memory Binary Search Tree (BST)** and **Hash Map** hybrid indexing system for fast searches and ordered range queries.
 
 ---
 
-## Project Overview
+## 📌 Project Overview
 
-LibTrack exposes a clean REST interface for managing a library catalog, member accounts, loans, and reservations. The catalog is backed by both a relational database and an in-memory dual-index (BST + hash map), giving the best of both worlds: database durability and in-process search performance.
+LibTrack provides a sleek REST API for managing a library catalog, member accounts, loans, and reservations. To bridge the gap between persistence durability and search speed, LibTrack employs a dual-index architecture:
+- **Database Durability**: SQLAlchemy ORM with SQLite handles transactional operations, foreign key relations, and polymorphic persistence.
+- **In-Memory Cache**: A custom process-wide hybrid index (BST + Hash Map) facilitates rapid, search-efficient alphabetical indexing and title range queries.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-```
-app/
-├── core/           Config, DB engine, JWT/bcrypt security helpers
-├── models/         SQLAlchemy ORM models (polymorphic LibraryItem hierarchy)
-├── repositories/   DB + in-memory index layer (only place that touches SQLAlchemy directly)
-├── services/       Business logic (CatalogService, LoanService, ReservationService, AuthService)
-├── schemas/        Pydantic request/response models
-├── api/
-│   ├── deps.py     Auth dependency injection (get_current_member, require_admin)
-│   └── v1/
-│       ├── api.py               Aggregates all routers
-│       └── endpoints/
-│           ├── auth.py          Register, login
-│           ├── items.py         Catalog CRUD + search
-│           ├── loans.py         Checkout, return, history, overdue
-│           └── reservations.py  Reserve, cancel
-└── main.py         FastAPI app, CORS, lifespan startup index rebuild
+```mermaid
+graph TD
+    Client[Client Browser / Frontend] <--> API[API Routes: app/api/]
+    API <--> Service[Service Layer: app/services/]
+    Service <--> Repo[Repository Layer: app/repositories/]
+    Repo <--> Cache[In-Memory Index: CatalogIndex]
+    Repo <--> DB[(SQLite DB)]
 ```
 
-### Why a BST *and* a Hash Map?
+### Directory Map
 
-| Need | Structure | Complexity |
-|---|---|---|
-| Lookup by ID / ISBN | Python `dict` (hash map) | O(1) average |
-| Exact title lookup | `TitleBST` | O(log n) average |
-| Alphabetical listing | BST in-order traversal | O(n) |
-| Range query (e.g. A–M) | BST range walk | O(log n + k) |
-
-A plain `dict` has no notion of **order** — to get alphabetical results you'd need to sort the entire catalog on every request (O(n log n)). The BST keeps items ordered on insertion, so in-order traversal is O(n) and range queries are O(log n + k) where k is the result size. Meanwhile the hash maps give O(1) constant-time lookups for the two most common exact-match patterns (by ID and by ISBN), which would be O(log n) through the BST.
-
-**Limitation**: the BST is keyed on title; if two distinct items share the same title the second insert overwrites the first node. In practice titles are unique enough that this is acceptable; a production system would key on `(title, id)` tuples.
+* **[`app/core/`](file:///c:/Users/aryan/Downloads/libtrack/app/core)** — App configuration, database engine/session setup, and JWT/bcrypt security helpers.
+* **[`app/models/`](file:///c:/Users/aryan/Downloads/libtrack/app/models)** — SQLAlchemy ORM models featuring polymorphic joined-table inheritance.
+* **[`app/repositories/`](file:///c:/Users/aryan/Downloads/libtrack/app/repositories)** — The boundary layer handling SQL querying and cache synchronization.
+* **[`app/services/`](file:///c:/Users/aryan/Downloads/libtrack/app/services)** — Business logic services (`AuthService`, `CatalogService`, `LoanService`, `ReservationService`).
+* **[`app/schemas/`](file:///c:/Users/aryan/Downloads/libtrack/app/schemas)** — Pydantic request and response schemas.
+* **[`app/utils/`](file:///c:/Users/aryan/Downloads/libtrack/app/utils)** — Implementations of `TitleBST` and `CatalogIndex`.
 
 ---
 
-## Setup
+## ⚡ Hybrid Indexing Strategy
 
-### Local (virtual environment)
+To resolve the trade-offs of single-structure caches, LibTrack implements a dual-index schema inside [`CatalogIndex`](file:///c:/Users/aryan/Downloads/libtrack/app/utils/search_structures.py):
 
+| Need | Cache Data Structure | Complexity (Avg) | Why? |
+| :--- | :--- | :--- | :--- |
+| **Lookup by ID / ISBN** | Python `dict` (Hash Map) | $O(1)$ | Direct, constant-time exact lookups. |
+| **Exact Title Search** | `TitleBST` | $O(\log n)$ | Fast lookup with natural string sorting. |
+| **Alphabetical Listing** | `TitleBST` | $O(n)$ | Retrieved via in-order traversal without sorting overhead. |
+| **Range Query (A–M)** | `TitleBST` | $O(\log n + k)$ | Traversing nodes matching bounds in logarithmic time. |
+
+> [!TIP]
+> Standard python hash-maps (`dict`) do not preserve keys in a sorted sequence. Fetching elements alphabetically requires sorting the collection on every query ($O(n \log n)$). The BST keeps titles ordered on insertion, offering highly performant range and alphabetical walks.
+
+---
+
+## 🛠️ Installation & Setup
+
+### 1. Local Setup
 ```bash
+# Clone the repository
 git clone <repo-url>
 cd libtrack
+
+# Create and activate a virtual environment
 python -m venv .venv
-# Windows
+# Windows:
 .venv\Scripts\activate
-# macOS/Linux
+# macOS/Linux:
 source .venv/bin/activate
 
+# Install requirements
 pip install -r requirements.txt
 
-# Apply database migrations
+# Run migrations to initialize the SQLite database
 alembic upgrade head
 
-# Start the development server
+# Launch the FastAPI dev server
 uvicorn app.main:app --reload
 ```
 
-The interactive docs are available at http://localhost:8000/docs.
+> [!NOTE]
+> The interactive documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-### Docker
-
+### 2. Docker Setup
 ```bash
 docker compose up --build
 ```
 
-This builds the image, runs `alembic upgrade head` inside the container, then starts uvicorn on port 8000.
+This commands builds the image, performs database migrations inside the container, and serves uvicorn on port `8000`.
 
 ---
 
-## Running Tests
+## 🧪 Testing
 
 ```bash
 pytest -v
 ```
-
-Tests use an **in-memory SQLite** database with `StaticPool` so every connection within a test shares the same database. The global catalog index is reset between tests to prevent BST state from leaking across test cases.
-
----
-
-## API Endpoint Reference
-
-### Auth
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | None | Register a new member |
-| `POST` | `/api/v1/auth/login` | None | Log in, receive JWT |
-
-### Catalog Items
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/items/books` | Admin | Add a physical book |
-| `POST` | `/api/v1/items/ebooks` | Admin | Add an e-book |
-| `POST` | `/api/v1/items/journals` | Admin | Add a journal |
-| `GET` | `/api/v1/items/search?title=X&exact=true` | None | BST exact or DB substring search |
-| `GET` | `/api/v1/items/alphabetical` | None | Full catalog in BST alphabetical order |
-| `GET` | `/api/v1/items/range?start=A&end=M` | None | BST range query |
-| `GET` | `/api/v1/items/{id}` | None | Get item by ID |
-
-### Loans
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/loans/checkout/{item_id}` | Member | Checkout an item |
-| `POST` | `/api/v1/loans/{loan_id}/return` | Member | Return an item (calculates fine) |
-| `GET` | `/api/v1/loans/my` | Member | Current member's loan history |
-| `GET` | `/api/v1/loans/overdue` | Admin | All currently overdue loans |
-
-### Reservations
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/reservations/{item_id}` | Member | Reserve an item |
-| `POST` | `/api/v1/reservations/{id}/cancel` | Member | Cancel a reservation |
+Tests leverage an in-memory SQLite database (`StaticPool`) to ensure each test case starts with a fresh database schema. The in-memory cache index is automatically cleared between tests to prevent state leakage.
 
 ---
 
-## Design Decisions
+## 📞 API Endpoints
 
-### Checkout Rules
+### 🔐 Authentication
+* `POST` `/api/v1/auth/register` — Register a new member.
+* `POST` `/api/v1/auth/login` — Log in and retrieve a JWT bearer token.
 
-- A member may only hold **one active loan per item** at a time. Attempting a second checkout of the same item returns `409 Conflict`.
-- When all copies are checked out, checkout returns `409 Conflict` (`"No copies currently available"`).
-- The due date defaults to **14 days** from checkout (`LOAN_PERIOD_DAYS` in `config.py`).
+### 📚 Catalog Management
+* `POST` `/api/v1/items/books` *(Admin)* — Add a physical book.
+* `POST` `/api/v1/items/ebooks` *(Admin)* — Add a digital e-book.
+* `POST` `/api/v1/items/journals` *(Admin)* — Add a serial journal.
+* `GET` `/api/v1/items/search` — Search catalog (Exact BST or substring database search).
+* `GET` `/api/v1/items/alphabetical` — Retrieve the full catalog ordered alphabetically.
+* `GET` `/api/v1/items/range` — Perform a range search on titles (e.g. `start=A&end=M`).
+* `GET` `/api/v1/items/{id}` — Get detailed specifications of an item.
 
-### Fine Calculation
+### 💳 Loans & Checkout
+* `POST` `/api/v1/loans/checkout/{item_id}` *(Member)* — Checkout a library item.
+* `POST` `/api/v1/loans/{loan_id}/return` *(Member)* — Return an item and evaluate overdue fines.
+* `GET` `/api/v1/loans/my` *(Member)* — View active and past loans of the current member.
+* `GET` `/api/v1/loans/overdue` *(Admin)* — Fetch all overdue loans in the system.
 
-Fines are computed lazily **at return time**:
+### ⏳ Reservations
+* `POST` `/api/v1/reservations/{item_id}` *(Member)* — Reserve a copy when none are available.
+* `POST` `/api/v1/reservations/{id}/cancel` *(Member)* — Cancel a pending reservation.
 
-```
-fine = max(0, (return_date - due_date).days) × FINE_PER_DAY
-```
+---
 
-`FINE_PER_DAY` defaults to **$0.50**. Fines are stored on the `Loan` row as `fine_amount`; a `fine_paid` boolean tracks settlement (payment endpoint is a future extension).
+## 💡 System Design Decisions
 
-### Reservation Queue
+### Joined-Table Polymorphic Inheritance
+The catalog uses a polymorphic model hierarchy via **Joined-Table Inheritance**. The parent database table (`items`) contains mutual columns (`title`, `author`, `isbn`, `available_copies`). Separate child tables (`books`, `ebooks`, and `journals`) reference this row through foreign keys, fetching specialized attributes (such as `download_url` or `issue_number`) polymorphically.
 
-- Any member may reserve any item regardless of availability.
-- Reservations are ordered by `queue_position` (monotonically incrementing count of WAITING reservations for that item at the moment of creation).
-- When a loan is returned and a copy becomes free, `LoanService._promote_next_reservation` automatically moves the earliest WAITING reservation to **READY** status, signalling the member that they may now collect the item.
-- Cancelling a reservation sets its status to **CANCELLED**; queue positions of remaining members are not recalculated (they keep their relative order).
+### Checkout & Loan Policies
+- **Concurrency Limit**: Members can only hold **one active loan** of any specific item at a time.
+- **Copy Controls**: When an item's `available_copies` is `0`, further loans are rejected with a `409 Conflict`.
+- **Loan Duration**: Defaults to **14 days** (customizable via `LOAN_PERIOD_DAYS` in `config.py`).
 
-### Polymorphic Catalog Model
+### Lazy Fine Calculation
+Overdue fines are not updated continuously in the database. Instead, they are calculated lazily **at return time**:
+$$\text{fine\_amount} = \max(0, \text{days\_overdue}) \times \text{FINE\_PER\_DAY}$$
+The default fine rate is **$0.50** per day.
 
-`LibraryItem` uses SQLAlchemy's **joined-table inheritance**:
-- `items` table holds shared fields (`title`, `author`, `isbn`, `available_copies`).
-- `books`, `ebooks`, and `journals` tables hold type-specific fields joined via FK.
-- The `item_type` discriminator column enables polymorphic queries.
+### Automated Queue Promotion
+When a copy is returned, the reservation queue is evaluated:
+1. The earliest reservation marked as `WAITING` (ordered by `queue_position`) is identified.
+2. Its status is updated to `READY`, allocating the copy to that member.
+3. Cancellations set status to `CANCELLED` without changing queue numbers of other members to prevent write locks, preserving relative ordering efficiently.
