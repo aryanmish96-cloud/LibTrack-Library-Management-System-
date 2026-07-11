@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LibTrack — Library Management System</title>
+  <meta name="description" content="LibTrack: A modern library management system with BST-powered search, loan tracking, and reservation queues." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --bg-base:        #0a0d14;
+      --bg-surface:     #111827;
+      --bg-card:        rgba(255,255,255,0.04);
+      --bg-card-hover:  rgba(255,255,255,0.07);
+      --border:         rgba(255,255,255,0.08);
+      --border-focus:   rgba(139,92,246,0.6);
+      --accent:         #8b5cf6;
+      --accent-soft:    rgba(139,92,246,0.15);
+      --accent-2:       #06b6d4;
+      --success:        #10b981;
+      --warning:        #f59e0b;
+      --danger:         #ef4444;
+      --text-primary:   #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted:     #475569;
+      --radius:         12px;
+      --radius-sm:      8px;
+      --shadow:         0 8px 32px rgba(0,0,0,0.4);
+      --glow:           0 0 40px rgba(139,92,246,0.15);
+    }
+
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    img { max-width: 100%; }
+    button { cursor: pointer; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-surface); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+    /* ===== NOISE OVERLAY ===== */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ===== LAYOUT ===== */
+    .app { position: relative; z-index: 1; display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: rgba(10,13,20,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      padding: 0 2rem;
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; gap: 1rem;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.2rem; font-weight: 700; color: var(--text-primary);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .logo span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    nav { display: flex; gap: 0.25rem; }
+    .nav-btn {
+      background: none; border: none; color: var(--text-secondary);
+      padding: 0.5rem 1rem; border-radius: var(--radius-sm);
+      font-size: 0.875rem; font-weight: 500; transition: all 0.2s;
+    }
+    .nav-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+    .nav-btn.active { background: var(--accent-soft); color: var(--accent); }
+
+    .header-right { display: flex; align-items: center; gap: 0.75rem; }
+    .badge {
+      font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem;
+      border-radius: 20px; background: var(--accent-soft); color: var(--accent);
+    }
+    .badge.admin { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .btn-sm {
+      font-size: 0.8rem; padding: 0.4rem 0.9rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); transition: all 0.2s; font-weight: 500;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ===== MAIN ===== */
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem; width: 100%; }
+
+    /* ===== VIEWS ===== */
+    .view { display: none; animation: fadeIn 0.3s ease; }
+    .view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== PAGE HEADERS ===== */
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .page-header p { color: var(--text-secondary); font-size: 0.9rem; }
+
+    /* ===== GRID LAYOUTS ===== */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      nav { display: none; }
+    }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { border-color: rgba(139,92,246,0.3); }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .card h2 .icon { font-size: 1.1rem; }
+
+    /* ===== FORM ELEMENTS ===== */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    input[type=text], input[type=email], input[type=password], input[type=number], select {
+      width: 100%; padding: 0.65rem 0.9rem;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-primary);
+      font-size: 0.9rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+    input::placeholder { color: var(--text-muted); }
+    select option { background: var(--bg-surface); }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.65rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.875rem;
+      font-weight: 600; border: none; transition: all 0.2s; width: 100%;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #7c3aed); color: white; box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--success); }
+    .btn-success:hover { background: rgba(16,185,129,0.25); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+    .btn-icon { width: auto; padding: 0.5rem; border-radius: var(--radius-sm); }
+
+    /* ===== SEARCH ROW ===== */
+    .search-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+    .search-row .form-group { flex: 1; margin: 0; }
+    .search-row .btn { width: auto; white-space: nowrap; }
+    .search-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .toggle-btn {
+      flex: 1; padding: 0.5rem; font-size: 0.8rem; font-weight: 500;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: none; color: var(--text-secondary); transition: all 0.2s;
+    }
+    .toggle-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+    /* ===== ITEM CARD ===== */
+    .item-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .item-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .item-card:hover { border-color: rgba(139,92,246,0.35); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .item-card:hover::before { opacity: 1; }
+    .item-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .item-card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+    .item-card-author { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem; }
+    .item-type-badge {
+      font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem;
+      border-radius: 6px; white-space: nowrap; flex-shrink: 0;
+    }
+    .type-book { background: rgba(139,92,246,0.15); color: var(--accent); }
+    .type-ebook { background: rgba(6,182,212,0.15); color: var(--accent-2); }
+    .type-journal { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .item-card-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .meta-chip {
+      font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.04);
+      padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid var(--border);
+    }
+    .avail-chip {
+      font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 6px;
+    }
+    .avail-yes { background: rgba(16,185,129,0.15); color: var(--success); }
+    .avail-no { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .item-card-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .item-card-actions .btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
+
+    /* ===== LOAN CARD ===== */
+    .loan-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem; transition: all 0.2s;
+    }
+    .loan-card:hover { border-color: rgba(139,92,246,0.3); }
+    .loan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .loan-id { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+    .loan-status { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 6px; text-transform: capitalize; }
+    .status-active { background: rgba(6,182,212,0.15); color: var(--accent-2); }
+    .status-returned { background: rgba(16,185,129,0.15); color: var(--success); }
+    .status-overdue { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .status-waiting { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-ready { background: rgba(16,185,129,0.15); color: var(--success); }
+    .status-fulfilled { background: rgba(139,92,246,0.15); color: var(--accent); }
+    .status-cancelled { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+    .loan-detail { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; display: flex; gap: 0.5rem; }
+    .loan-detail strong { color: var(--text-primary); }
+    .fine-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.6rem; border-radius: 8px; background: rgba(239,68,68,0.12); color: var(--danger); margin-top: 0.5rem; }
+
+    /* ===== DIVIDER ===== */
+    .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+    /* ===== TABS ===== */
+    .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 500; background: none;
+      border: none; color: var(--text-secondary); position: relative;
+      border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--text-primary); }
+
+    /* ===== ALERT / TOAST ===== */
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast {
+      min-width: 260px; max-width: 360px; padding: 0.9rem 1.1rem;
+      border-radius: var(--radius); font-size: 0.875rem; font-weight: 500;
+      backdrop-filter: blur(12px); border: 1px solid; animation: slideIn 0.3s ease;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { to { transform: translateX(110%); opacity: 0; } }
+    .toast-success { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #6ee7b7; }
+    .toast-error { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+    .toast-info { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+
+    /* ===== EMPTY STATE ===== */
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .empty .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+    .empty p { font-size: 0.9rem; }
+
+    /* ===== SPINNER ===== */
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== STAT CARDS ===== */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem; position: relative; overflow: hidden;
+    }
+    .stat-card::after {
+      content: attr(data-icon); position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+      font-size: 2rem; opacity: 0.08;
+    }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; }
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.cyan { color: var(--accent-2); }
+    .stat-value.green { color: var(--success); }
+    .stat-value.red { color: var(--danger); }
+
+    /* ===== LOGIN SCREEN ===== */
+    .auth-container { max-width: 420px; margin: 4rem auto; }
+    .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; backdrop-filter: blur(12px); box-shadow: var(--glow); }
+    .auth-logo { text-align: center; margin-bottom: 2rem; }
+    .auth-logo .logo-icon { width: 56px; height: 56px; margin: 0 auto 0.75rem; border-radius: 16px; font-size: 1.5rem; }
+    .auth-logo h1 { font-size: 1.4rem; font-weight: 700; }
+    .auth-logo p { color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem; }
+    .auth-tabs { display: flex; margin-bottom: 1.5rem; gap: 0.25rem; }
+    .auth-tab {
+      flex: 1; padding: 0.6rem; text-align: center; font-size: 0.875rem; font-weight: 600;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); background: none;
+      color: var(--text-secondary); transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+    /* ===== SECTION HEADER ===== */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .section-header h2 { font-size: 1rem; font-weight: 600; }
+    .section-header .btn { width: auto; font-size: 0.8rem; padding: 0.45rem 1rem; }
+
+    /* ===== PROGRESS BAR ===== */
+    .progress-row { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 0.6rem; }
+    .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.5s ease; }
+
+    /* ===== SCROLLABLE LIST ===== */
+    .scroll-list { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem; }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;">📚</div>
+        <h1>LibTrack</h1>
+        <p>Library Management System</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" />
+        </div>
+        <button class="btn btn-primary" onclick="login()" id="login-btn">Sign In</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="register-form" style="display:none;">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="reg-name" placeholder="Jane Doe" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="••••••••" />
+        </div>
+        <button class="btn btn-primary" onclick="register()" id="register-btn">Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div class="app" id="app-screen" style="display:none;">
+
+  <header>
+    <div class="header-inner">
+      <a class="logo" href="#">
+        <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;font-size:1rem;">📚</div>
+        <span>LibTrack</span>
+      </a>
+      <nav>
+        <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard">Dashboard</button>
+        <button class="nav-btn" onclick="showView('catalog')" id="nav-catalog">Catalog</button>
+        <button class="nav-btn" onclick="showView('loans')" id="nav-loans">My Loans</button>
+        <button class="nav-btn" onclick="showView('reservations')" id="nav-reservations">Reservations</button>
+        <button class="nav-btn" onclick="showView('admin')" id="nav-admin" style="display:none;">Admin</button>
+      </nav>
+      <div class="header-right">
+        <span id="role-badge" class="badge">member</span>
+        <span id="user-name" style="font-size:0.85rem;color:var(--text-secondary);"></span>
+        <button class="btn-sm" onclick="logout()">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <h1>Welcome back 👋</h1>
+        <p>Here's what's happening in your library today.</p>
+      </div>
+
+      <div class="stats" id="stats-row">
+        <div class="stat-card" data-icon="📚">
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value accent" id="stat-items">—</div>
+        </div>
+        <div class="stat-card" data-icon="📖">
+          <div class="stat-label">Active Loans</div>
+          <div class="stat-value cyan" id="stat-active">—</div>
+        </div>
+        <div class="stat-card" data-icon="✅">
+          <div class="stat-label">Returned</div>
+          <div class="stat-value green" id="stat-returned">—</div>
+        </div>
+        <div class="stat-card" data-icon="⏰">
+          <div class="stat-label">Overdue</div>
+          <div class="stat-value red" id="stat-overdue">—</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2><span class="icon">📖</span> Recent Loans</h2>
+          <div id="dash-loans" class="scroll-list"></div>
+        </div>
+        <div class="card">
+          <h2><span class="icon">🔖</span> Quick Checkout</h2>
+          <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1rem;">Enter an item ID to checkout directly.</p>
+          <div class="form-group">
+            <label>Item ID</label>
+            <input type="number" id="quick-item-id" placeholder="e.g. 3" min="1" />
+          </div>
+          <button class="btn btn-primary" onclick="quickCheckout()">Checkout Item</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CATALOG ===== -->
+    <div class="view" id="view-catalog">
+      <div class="page-header">
+        <h1>Catalog</h1>
+        <p>Browse and search the library catalog. Exact-match uses the BST index; substring falls back to the database.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="search-toggle">
+          <button class="toggle-btn active" onclick="setCatalogMode('search')" id="mode-search">🔍 Search</button>
+          <button class="toggle-btn" onclick="setCatalogMode('alpha')" id="mode-alpha">🔤 Alphabetical</button>
+          <button class="toggle-btn" onclick="setCatalogMode('range')" id="mode-range">📏 Range</button>
+        </div>
+
+        <div id="panel-search">
+          <div class="search-row">
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" id="search-title" placeholder="e.g. Clean Code" />
+            </div>
+            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;color:var(--text-secondary);font-size:0.8rem;white-space:nowrap;padding-bottom:0;margin:0 0 1rem;">
+              <input type="checkbox" id="search-exact" style="width:auto;" /> Exact match (BST)
+            </label>
+            <button class="btn btn-primary" style="width:auto;" onclick="searchCatalog()">Search</button>
+            <button class="btn btn-secondary" style="width:auto;" onclick="loadAllItems()">All</button>
+          </div>
+        </div>
+
+        <div id="panel-alpha" style="display:none;">
+          <button class="btn btn-primary" onclick="loadAlphabetical()">Load Alphabetical</button>
+        </div>
+
+        <div id="panel-range" style="display:none;">
+          <div class="search-row">
+            <div class="form-group">
+              <label>From title</label>
+              <input type="text" id="range-start" placeholder="e.g. A" />
+            </div>
+            <div class="form-group">
+              <label>To title</label>
+              <input type="text" id="range-end" placeholder="e.g. M" />
+            </div>
+            <button class="btn btn-primary" style="width:auto;" onclick="loadRange()">Query</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Results <span id="catalog-count" style="color:var(--text-muted);font-size:0.85rem;font-weight:400;"></span></h2>
+      </div>
+      <div id="catalog-grid" class="grid-3"></div>
+    </div>
+
+    <!-- ===== LOANS ===== -->
+    <div class="view" id="view-loans">
+      <div class="page-header">
+        <h1>My Loans</h1>
+        <p>Track your checkouts, due dates, and any outstanding fines.</p>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:2rem;">
+        <div class="card">
+          <h2><span class="icon">🛒</span> Checkout Item</h2>
+          <div class="form-group">
+            <label>Item ID</label>
+            <input type="number" id="checkout-item-id" placeholder="Enter item ID" min="1" />
+          </div>
+          <button class="btn btn-primary" onclick="checkoutItem()">Checkout</button>
+        </div>
+        <div class="card">
+          <h2><span class="icon">↩️</span> Return Item</h2>
+          <div class="form-group">
+            <label>Loan ID</label>
+            <input type="number" id="return-loan-id" placeholder="Enter loan ID" min="1" />
+          </div>
+          <button class="btn btn-success" onclick="returnItem()">Return</button>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Loan History</h2>
+        <button class="btn btn-secondary" onclick="loadMyLoans()">↻ Refresh</button>
+      </div>
+      <div id="loans-list" class="scroll-list" style="max-height:none;"></div>
+    </div>
+
+    <!-- ===== RESERVATIONS ===== -->
+    <div class="view" id="view-reservations">
+      <div class="page-header">
+        <h1>Reservations</h1>
+        <p>Reserve items currently on loan. You'll be notified when they become available.</p>
+      </div>
+
+      <div class="card" style="max-width:480px;margin-bottom:2rem;">
+        <h2><span class="icon">🔖</span> Reserve an Item</h2>
+        <div class="form-group">
+          <label>Item ID</label>
+          <input type="number" id="res-item-id" placeholder="Enter item ID" min="1" />
+        </div>
+        <button class="btn btn-primary" onclick="reserveItem()">Add to Queue</button>
+      </div>
+
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1.25rem;">
+        Your active reservations are listed below. Cancel any you no longer need.
+      </p>
+      <div id="res-list" class="scroll-list" style="max-height:none;"></div>
+    </div>
+
+    <!-- ===== ADMIN ===== -->
+    <div class="view" id="view-admin">
+      <div class="page-header">
+        <h1>Admin Panel</h1>
+        <p>Manage catalog items and review overdue loans.</p>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:2rem;">
+        <div class="card">
+          <h2><span class="icon">📗</span> Add Book</h2>
+          <div class="form-group"><label>Title</label><input type="text" id="book-title" placeholder="e.g. Clean Code" /></div>
+          <div class="form-group"><label>Author</label><input type="text" id="book-author" placeholder="e.g. Robert Martin" /></div>
+          <div class="form-group"><label>ISBN (optional)</label><input type="text" id="book-isbn" placeholder="978-..." /></div>
+          <div class="form-group"><label>Genre (optional)</label><input type="text" id="book-genre" placeholder="e.g. Software Engineering" /></div>
+          <div class="form-group"><label>Publisher (optional)</label><input type="text" id="book-publisher" placeholder="e.g. Prentice Hall" /></div>
+          <div class="form-group"><label>Total Copies</label><input type="number" id="book-copies" value="1" min="1" /></div>
+          <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+          <div class="card">
+            <h2><span class="icon">📱</span> Add E-Book</h2>
+            <div class="form-group"><label>Title</label><input type="text" id="ebook-title" placeholder="e.g. Python Tricks" /></div>
+            <div class="form-group"><label>Author</label><input type="text" id="ebook-author" placeholder="e.g. Dan Bader" /></div>
+            <div class="form-group"><label>Format</label>
+              <select id="ebook-format">
+                <option value="PDF">PDF</option>
+                <option value="EPUB">EPUB</option>
+                <option value="MOBI">MOBI</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Total Copies</label><input type="number" id="ebook-copies" value="10" min="1" /></div>
+            <button class="btn btn-primary" onclick="addEBook()">Add E-Book</button>
+          </div>
+
+          <div class="card">
+            <h2><span class="icon">📰</span> Add Journal</h2>
+            <div class="form-group"><label>Title</label><input type="text" id="journal-title" placeholder="e.g. Nature" /></div>
+            <div class="form-group"><label>Author / Publisher</label><input type="text" id="journal-author" placeholder="e.g. Springer" /></div>
+            <div class="form-group"><label>Volume</label><input type="number" id="journal-vol" placeholder="e.g. 12" /></div>
+            <div class="form-group"><label>Issue No.</label><input type="number" id="journal-issue" placeholder="e.g. 3" /></div>
+            <div class="form-group"><label>Total Copies</label><input type="number" id="journal-copies" value="2" min="1" /></div>
+            <button class="btn btn-primary" onclick="addJournal()">Add Journal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>⏰ Overdue Loans</h2>
+        <button class="btn btn-secondary" onclick="loadOverdue()">↻ Refresh</button>
+      </div>
+      <div id="overdue-list" class="scroll-list" style="max-height:none;"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ===================================================================
+// CONFIG
+// ===================================================================
+const API = 'http://localhost:8000/api/v1';
+let token = null;
+let currentRole = 'member';
+
+// ===================================================================
+// AUTH HELPERS
+// ===================================================================
+function authHeader() {
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: authHeader(),
+    ...opts,
+  });
+  const data = res.status === 204 ? null : await res.json().catch(() => null);
+  if (!res.ok) throw { status: res.status, detail: data?.detail || data || 'Unknown error' };
+  return data;
+}
+
+// ===================================================================
+// TOAST
+// ===================================================================
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
+}
+
+// ===================================================================
+// NAVIGATION
+// ===================================================================
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'loans') loadMyLoans();
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'reservations') loadMyReservations();
+  if (name === 'catalog') loadAllItems();
+  if (name === 'admin') loadOverdue();
+}
+
+// ===================================================================
+// AUTH FORMS
+// ===================================================================
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+}
+
+async function login() {
+  const btn = document.getElementById('login-btn');
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) return toast('Fill in all fields', 'error');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    token = data.access_token;
+    decodeAndShowApp(token);
+    toast('Signed in successfully!', 'success');
+  } catch (e) {
+    toast(typeof e.detail === 'string' ? e.detail : 'Login failed', 'error');
+  } finally {
+    btn.innerHTML = 'Sign In';
+    btn.disabled = false;
+  }
+}
+
+async function register() {
+  const btn = document.getElementById('register-btn');
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!name || !email || !password) return toast('Fill in all fields', 'error');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  try {
+    await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+    toast('Account created! You can now sign in.', 'success');
+    switchAuthTab('login');
+    document.getElementById('login-email').value = email;
+  } catch (e) {
+    toast(typeof e.detail === 'string' ? e.detail : 'Registration failed', 'error');
+  } finally {
+    btn.innerHTML = 'Create Account';
+    btn.disabled = false;
+  }
+}
+
+function decodeAndShowApp(jwt) {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    currentRole = payload.role;
+  } catch { currentRole = 'member'; }
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'grid';
+  const badge = document.getElementById('role-badge');
+  badge.textContent = currentRole;
+  if (currentRole === 'admin') {
+    badge.classList.add('admin');
+    document.getElementById('nav-admin').style.display = '';
+  }
+  loadDashboard();
+}
+
+function logout() {
+  token = null;
+  currentRole = 'member';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = '';
+  document.getElementById('role-badge').classList.remove('admin');
+  document.getElementById('nav-admin').style.display = 'none';
+}
+
+// ===================================================================
+// DASHBOARD
+// ===================================================================
+async function loadDashboard() {
+  try {
+    const loans = await apiFetch('/loans/my');
+    const active = loans.filter(l => !l.return_date);
+    const returned = loans.filter(l => l.return_date);
+    const overdue = loans.filter(l => l.is_overdue && !l.return_date);
+
+    document.getElementById('stat-active').textContent = active.length;
+    document.getElementById('stat-returned').textContent = returned.length;
+    document.getElementById('stat-overdue').textContent = overdue.length;
+
+    // Total items via catalog
+    const items = await apiFetch('/items/search');
+    document.getElementById('stat-items').textContent = items.length;
+
+    // Recent loans
+    const container = document.getElementById('dash-loans');
+    const recent = [...loans].reverse().slice(0, 5);
+    if (!recent.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No loans yet</p></div>';
+    } else {
+      container.innerHTML = recent.map(l => loanCardHTML(l)).join('');
+    }
+  } catch { /* silent */ }
+}
+
+// ===================================================================
+// CATALOG
+// ===================================================================
+let catalogMode = 'search';
+function setCatalogMode(mode) {
+  catalogMode = mode;
+  ['search','alpha','range'].forEach(m => {
+    document.getElementById('mode-' + m).classList.toggle('active', m === mode);
+    document.getElementById('panel-' + m).style.display = m === mode ? '' : 'none';
+  });
+}
+
+async function loadAllItems() {
+  await renderCatalogItems(await apiFetch('/items/search'));
+}
+async function searchCatalog() {
+  const title = document.getElementById('search-title').value.trim();
+  const exact = document.getElementById('search-exact').checked;
+  const params = title ? `?title=${encodeURIComponent(title)}&exact=${exact}` : '';
+  await renderCatalogItems(await apiFetch('/items/search' + params));
+}
+async function loadAlphabetical() {
+  await renderCatalogItems(await apiFetch('/items/alphabetical'));
+}
+async function loadRange() {
+  const start = encodeURIComponent(document.getElementById('range-start').value);
+  const end   = encodeURIComponent(document.getElementById('range-end').value);
+  await renderCatalogItems(await apiFetch(`/items/range?start=${start}&end=${end}`));
+}
+
+async function renderCatalogItems(items) {
+  const grid = document.getElementById('catalog-grid');
+  document.getElementById('catalog-count').textContent = `(${items.length})`;
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No items found</p></div>';
+    return;
+  }
+  grid.innerHTML = items.map(item => {
+    const typeCls = `type-${item.item_type}`;
+    const typeLabel = item.item_type === 'ebook' ? 'E-Book' : item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1);
+    const avail = item.available_copies > 0;
+    const pct = Math.round((item.available_copies / item.total_copies) * 100);
+    return `<div class="item-card">
+      <div class="item-card-header">
+        <div>
+          <div class="item-card-title">${esc(item.title)}</div>
+          <div class="item-card-author">by ${esc(item.author)}</div>
+        </div>
+        <span class="item-type-badge ${typeCls}">${typeLabel}</span>
+      </div>
+      <div class="item-card-meta">
+        <span class="meta-chip">ID: ${item.id}</span>
+        ${item.isbn ? `<span class="meta-chip">ISBN: ${esc(item.isbn)}</span>` : ''}
+        <span class="avail-chip ${avail ? 'avail-yes' : 'avail-no'}">${item.available_copies}/${item.total_copies} avail.</span>
+      </div>
+      <div class="progress-row"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="item-card-actions">
+        <button class="btn btn-secondary" onclick="prefillCheckout(${item.id})">Checkout</button>
+        <button class="btn btn-secondary" onclick="prefillReserve(${item.id})">Reserve</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function prefillCheckout(id) {
+  document.getElementById('checkout-item-id').value = id;
+  showView('loans');
+}
+function prefillReserve(id) {
+  document.getElementById('res-item-id').value = id;
+  showView('reservations');
+}
+
+// ===================================================================
+// LOANS
+// ===================================================================
+async function loadMyLoans() {
+  const container = document.getElementById('loans-list');
+  container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto;"></div></div>';
+  try {
+    const loans = await apiFetch('/loans/my');
+    if (!loans.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No loans yet. Check out a book from the catalog!</p></div>';
+    } else {
+      container.innerHTML = loans.reverse().map(l => loanCardHTML(l, true)).join('');
+    }
+  } catch {
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load loans</p></div>';
+  }
+}
+
+async function checkoutItem() {
+  const id = document.getElementById('checkout-item-id').value;
+  if (!id) return toast('Enter an item ID', 'error');
+  try {
+    const loan = await apiFetch(`/loans/checkout/${id}`, { method: 'POST' });
+    toast(`Checked out! Loan #${loan.id} — due ${fmtDate(loan.due_date)}`, 'success');
+    document.getElementById('checkout-item-id').value = '';
+    loadMyLoans();
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+async function quickCheckout() {
+  const id = document.getElementById('quick-item-id').value;
+  if (!id) return toast('Enter an item ID', 'error');
+  try {
+    const loan = await apiFetch(`/loans/checkout/${id}`, { method: 'POST' });
+    toast(`Checked out! Loan #${loan.id} — due ${fmtDate(loan.due_date)}`, 'success');
+    document.getElementById('quick-item-id').value = '';
+    loadDashboard();
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+async function returnItem() {
+  const id = document.getElementById('return-loan-id').value;
+  if (!id) return toast('Enter a loan ID', 'error');
+  try {
+    const loan = await apiFetch(`/loans/${id}/return`, { method: 'POST' });
+    const fineMsg = loan.fine_amount > 0 ? ` Fine: $${loan.fine_amount.toFixed(2)}` : '';
+    toast(`Returned successfully!${fineMsg}`, 'success');
+    document.getElementById('return-loan-id').value = '';
+    loadMyLoans();
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+function returnLoan(id) {
+  document.getElementById('return-loan-id').value = id;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loanCardHTML(l, showReturn = false) {
+  const active = !l.return_date;
+  const statusCls = !active ? 'status-returned' : l.is_overdue ? 'status-overdue' : 'status-active';
+  const statusTxt = !active ? 'Returned' : l.is_overdue ? 'Overdue' : 'Active';
+  const titleStr = l.item_title ? ` · <strong>"${esc(l.item_title)}"</strong>` : '';
+  return `<div class="loan-card">
+    <div class="loan-header">
+      <span class="loan-id">Loan #${l.id}${titleStr} · Item #${l.item_id}</span>
+      <span class="loan-status ${statusCls}">${statusTxt}</span>
+    </div>
+    <div class="loan-detail"><span>Checked out:</span><strong>${fmtDate(l.checkout_date)}</strong></div>
+    <div class="loan-detail"><span>Due:</span><strong>${fmtDate(l.due_date)}</strong></div>
+    ${l.return_date ? `<div class="loan-detail"><span>Returned:</span><strong>${fmtDate(l.return_date)}</strong></div>` : ''}
+    ${l.fine_amount > 0 ? `<div class="fine-badge">⚠ Fine: $${l.fine_amount.toFixed(2)}${l.fine_paid ? ' (Paid)' : ' (Unpaid)'}</div>` : ''}
+    ${showReturn && active ? `<button class="btn btn-success" style="margin-top:0.75rem;" onclick="returnLoan(${l.id})">↩ Return This Item</button>` : ''}
+  </div>`;
+}
+
+// ===================================================================
+// RESERVATIONS
+// ===================================================================
+async function loadMyReservations() {
+  const container = document.getElementById('res-list');
+  container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto;"></div></div>';
+  try {
+    const reservations = await apiFetch('/reservations/my');
+    if (!reservations.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No reservations yet. Reserve a book from the catalog!</p></div>';
+    } else {
+      container.innerHTML = reservations.map(res => reservationCardHTML(res)).join('');
+    }
+  } catch (e) {
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load reservations</p></div>';
+  }
+}
+
+async function reserveItem() {
+  const id = document.getElementById('res-item-id').value;
+  if (!id) return toast('Enter an item ID', 'error');
+  try {
+    const res = await apiFetch(`/reservations/${id}`, { method: 'POST' });
+    toast(`Reserved! Queue position: #${res.queue_position}`, 'success');
+    document.getElementById('res-item-id').value = '';
+    renderReservation(res);
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+function reservationCardHTML(res) {
+  const statusCls = `status-${res.status}`;
+  const titleStr = res.item_title ? ` · <strong>"${esc(res.item_title)}"</strong>` : '';
+  const canCancel = res.status === 'waiting' || res.status === 'ready';
+  return `<div class="loan-card" id="res-${res.id}">
+    <div class="loan-header">
+      <span class="loan-id">Reservation #${res.id}${titleStr} · Item #${res.item_id}</span>
+      <span class="loan-status ${statusCls}">${res.status}</span>
+    </div>
+    <div class="loan-detail"><span>Queue position:</span><strong>#${res.queue_position}</strong></div>
+    <div class="loan-detail"><span>Reserved on:</span><strong>${fmtDate(res.reservation_date)}</strong></div>
+    ${canCancel ? `<button class="btn btn-danger" style="margin-top:0.75rem;" onclick="cancelReservation(${res.id})">Cancel Reservation</button>` : ''}
+  </div>`;
+}
+
+function renderReservation(res) {
+  const container = document.getElementById('res-list');
+  const empty = container.querySelector('.empty');
+  if (empty) empty.remove();
+
+  const existing = document.getElementById(`res-${res.id}`);
+  if (existing) {
+    existing.outerHTML = reservationCardHTML(res);
+  } else {
+    const temp = document.createElement('div');
+    temp.innerHTML = reservationCardHTML(res);
+    container.prepend(temp.firstElementChild);
+  }
+}
+
+async function cancelReservation(id) {
+  try {
+    const res = await apiFetch(`/reservations/${id}/cancel`, { method: 'POST' });
+    toast('Reservation cancelled', 'success');
+    renderReservation(res);
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+// ===================================================================
+// ADMIN
+// ===================================================================
+async function addBook() {
+  const payload = {
+    title:      document.getElementById('book-title').value.trim(),
+    author:     document.getElementById('book-author').value.trim(),
+    isbn:       document.getElementById('book-isbn').value.trim() || null,
+    genre:      document.getElementById('book-genre').value.trim() || null,
+    publisher:  document.getElementById('book-publisher').value.trim() || null,
+    total_copies: parseInt(document.getElementById('book-copies').value) || 1,
+  };
+  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  try {
+    const item = await apiFetch('/items/books', { method: 'POST', body: JSON.stringify(payload) });
+    toast(`"${item.title}" added to catalog (ID: ${item.id})`, 'success');
+    ['book-title','book-author','book-isbn','book-genre','book-publisher'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('book-copies').value = '1';
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+async function addEBook() {
+  const payload = {
+    title:        document.getElementById('ebook-title').value.trim(),
+    author:       document.getElementById('ebook-author').value.trim(),
+    file_format:  document.getElementById('ebook-format').value,
+    total_copies: parseInt(document.getElementById('ebook-copies').value) || 10,
+  };
+  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  try {
+    const item = await apiFetch('/items/ebooks', { method: 'POST', body: JSON.stringify(payload) });
+    toast(`E-Book "${item.title}" added (ID: ${item.id})`, 'success');
+    ['ebook-title','ebook-author'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ebook-copies').value = '10';
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+async function addJournal() {
+  const payload = {
+    title:        document.getElementById('journal-title').value.trim(),
+    author:       document.getElementById('journal-author').value.trim(),
+    volume:       parseInt(document.getElementById('journal-vol').value) || null,
+    issue_number: parseInt(document.getElementById('journal-issue').value) || null,
+    total_copies: parseInt(document.getElementById('journal-copies').value) || 2,
+  };
+  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  try {
+    const item = await apiFetch('/items/journals', { method: 'POST', body: JSON.stringify(payload) });
+    toast(`Journal "${item.title}" added (ID: ${item.id})`, 'success');
+    ['journal-title','journal-author','journal-vol','journal-issue'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('journal-copies').value = '2';
+  } catch (e) { toast(errMsg(e), 'error'); }
+}
+
+async function loadOverdue() {
+  const container = document.getElementById('overdue-list');
+  container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto;"></div></div>';
+  try {
+    const loans = await apiFetch('/loans/overdue');
+    if (!loans.length) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>No overdue loans — great news!</p></div>';
+    } else {
+      container.innerHTML = loans.map(l => loanCardHTML(l)).join('');
+    }
+  } catch {
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load</p></div>';
+  }
+}
+
+// ===================================================================
+// UTILS
+// ===================================================================
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+}
+function errMsg(e) {
+  if (typeof e.detail === 'string') return e.detail;
+  if (Array.isArray(e.detail)) return e.detail.map(d => d.msg).join(', ');
+  return 'Something went wrong';
+}
+
+// ===================================================================
+// KEYBOARD SHORTCUTS
+// ===================================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') {
+    if (document.getElementById('login-form').style.display !== 'none') login();
+  }
+});
+</script>
+</body>
+</html>
