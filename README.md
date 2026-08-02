@@ -1,19 +1,23 @@
 # ⚡ LibTrack
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F27?style=for-the-badge&logo=python&logoColor=white)](https://www.sqlalchemy.org)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-21-007396?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org)
+[![Spring Security](https://img.shields.io/badge/Spring%20Security-6-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)](https://spring.io/projects/spring-security)
+[![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)](https://maven.apache.org)
 [![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
 
-A high-performance library management REST API featuring a custom **in-memory Binary Search Tree (BST)** and **Hash Map** hybrid indexing system for fast searches and ordered range queries.
+A full-featured **Library Management System** REST API built with **Spring Boot 3.3** and **Java 21**. Features JWT-based authentication, role-based access control, polymorphic catalog item types, loan tracking with overdue fine calculation, and a FIFO reservation queue system.
 
 ---
 
 ## 📌 Project Overview
 
-LibTrack provides a sleek REST API for managing a library catalog, member accounts, loans, and reservations. To bridge the gap between persistence durability and search speed, LibTrack employs a dual-index architecture:
-- **Database Durability**: SQLAlchemy ORM with SQLite handles transactional operations, foreign key relations, and polymorphic persistence.
-- **In-Memory Cache**: A custom process-wide hybrid index (BST + Hash Map) facilitates rapid, search-efficient alphabetical indexing and title range queries.
+LibTrack provides a complete REST API for managing:
+
+- 👤 **Members** — Registration, login with JWT tokens, admin & member roles
+- 📚 **Catalog** — Books, EBooks, and Journals via polymorphic JPA inheritance
+- 💳 **Loans** — Checkout / return workflow with automatic overdue fine calculation
+- ⏳ **Reservations** — FIFO queue with automatic promotion when copies become available
 
 ---
 
@@ -21,130 +25,164 @@ LibTrack provides a sleek REST API for managing a library catalog, member accoun
 
 ```mermaid
 graph TD
-    Client[Client Browser / Frontend] <--> API[API Routes: app/api/]
-    API <--> Service[Service Layer: app/services/]
-    Service <--> Repo[Repository Layer: app/repositories/]
-    Repo <--> Cache[In-Memory Index: CatalogIndex]
-    Repo <--> DB[(SQLite DB)]
+    Client[Browser / Frontend] <--> Controller[REST Controllers: /api/v1/]
+    Controller --> Security[JwtAuthFilter + Spring Security]
+    Controller <--> Service[Service Layer]
+    Service <--> Repo[Spring Data JPA Repositories]
+    Repo <--> DB[(SQLite Database)]
 ```
 
-### Directory Map
+### Backend Structure (`backend/src/main/java/com/libtrack/`)
 
-* **[`app/core/`](file:///c:/Users/aryan/Downloads/libtrack/app/core)** — App configuration, database engine/session setup, and JWT/bcrypt security helpers.
-* **[`app/models/`](file:///c:/Users/aryan/Downloads/libtrack/app/models)** — SQLAlchemy ORM models featuring polymorphic joined-table inheritance.
-* **[`app/repositories/`](file:///c:/Users/aryan/Downloads/libtrack/app/repositories)** — The boundary layer handling SQL querying and cache synchronization.
-* **[`app/services/`](file:///c:/Users/aryan/Downloads/libtrack/app/services)** — Business logic services (`AuthService`, `CatalogService`, `LoanService`, `ReservationService`).
-* **[`app/schemas/`](file:///c:/Users/aryan/Downloads/libtrack/app/schemas)** — Pydantic request and response schemas.
-* **[`app/utils/`](file:///c:/Users/aryan/Downloads/libtrack/app/utils)** — Implementations of `TitleBST` and `CatalogIndex`.
-
----
-
-## ⚡ Hybrid Indexing Strategy
-
-To resolve the trade-offs of single-structure caches, LibTrack implements a dual-index schema inside [`CatalogIndex`](file:///c:/Users/aryan/Downloads/libtrack/app/utils/search_structures.py):
-
-| Need | Cache Data Structure | Complexity (Avg) | Why? |
-| :--- | :--- | :--- | :--- |
-| **Lookup by ID / ISBN** | Python `dict` (Hash Map) | $O(1)$ | Direct, constant-time exact lookups. |
-| **Exact Title Search** | `TitleBST` | $O(\log n)$ | Fast lookup with natural string sorting. |
-| **Alphabetical Listing** | `TitleBST` | $O(n)$ | Retrieved via in-order traversal without sorting overhead. |
-| **Range Query (A–M)** | `TitleBST` | $O(\log n + k)$ | Traversing nodes matching bounds in logarithmic time. |
-
-> [!TIP]
-> Standard python hash-maps (`dict`) do not preserve keys in a sorted sequence. Fetching elements alphabetically requires sorting the collection on every query ($O(n \log n)$). The BST keeps titles ordered on insertion, offering highly performant range and alphabetical walks.
+| Package | Responsibility |
+|---|---|
+| `config/` | CORS (`AppConfig`), Spring Security (`SecurityConfig`), JWT properties |
+| `security/` | `JwtUtil` — token generation/validation · `JwtAuthFilter` — Bearer token extraction |
+| `model/` | JPA entities: `Member`, `LibraryItem` *(base)*, `Book`, `EBook`, `Journal`, `Loan`, `Reservation` |
+| `dto/` | Request & response objects for auth, items, loans, reservations |
+| `repository/` | Spring Data JPA interfaces with JPQL queries |
+| `service/` | Business logic: `AuthService`, `CatalogService`, `LoanService`, `ReservationService` |
+| `controller/` | REST controllers + `GlobalExceptionHandler` |
 
 ---
 
-## 🛠️ Installation & Setup
+## 🛠️ Prerequisites
+
+- **Java 21+** — [Download Temurin](https://adoptium.net/)
+- **Maven 3.8+** — [Download Maven](https://maven.apache.org/download.cgi)
+
+---
+
+## 🚀 Installation & Setup
 
 ### 1. Local Setup
+
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd libtrack
+git clone https://github.com/aryanmish96-cloud/LibTrack-Library-Management-System-.git
+cd LibTrack-Library-Management-System-
 
-# Create and activate a virtual environment
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
+# Build the project (skip tests for a quick start)
+cd backend
+mvn clean package -DskipTests
 
-# Install requirements
-pip install -r requirements.txt
-
-# Run migrations to initialize the SQLite database
-alembic upgrade head
-
-# Launch the FastAPI dev server
-uvicorn app.main:app --reload
+# Run the server from the project root
+# (so the SQLite DB resolves to ../libtrack.db)
+cd ..
+java -jar backend/target/libtrack-1.0.0.jar
 ```
 
+The API will be live at **http://localhost:8000/api/v1**
+
+Then open `frontend/index.html` in your browser to use the full UI.
+
 > [!NOTE]
-> The interactive documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+> The server auto-creates all database tables on first run via `spring.jpa.hibernate.ddl-auto=update`. No manual migration step needed.
 
 ### 2. Docker Setup
+
 ```bash
 docker compose up --build
 ```
 
-This commands builds the image, performs database migrations inside the container, and serves uvicorn on port `8000`.
+Builds a multi-stage image (Maven build → slim JRE runtime) and serves the API on port `8000`.
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-pytest -v
+cd backend
+mvn test
 ```
-Tests leverage an in-memory SQLite database (`StaticPool`) to ensure each test case starts with a fresh database schema. The in-memory cache index is automatically cleared between tests to prevent state leakage.
 
 ---
 
-## 📞 API Endpoints
+## 📞 API Reference
+
+Base URL: `http://localhost:8000/api/v1`
+
+All protected endpoints require: `Authorization: Bearer <token>`
 
 ### 🔐 Authentication
-* `POST` `/api/v1/auth/register` — Register a new member.
-* `POST` `/api/v1/auth/login` — Log in and retrieve a JWT bearer token.
 
-### 📚 Catalog Management
-* `POST` `/api/v1/items/books` *(Admin)* — Add a physical book.
-* `POST` `/api/v1/items/ebooks` *(Admin)* — Add a digital e-book.
-* `POST` `/api/v1/items/journals` *(Admin)* — Add a serial journal.
-* `GET` `/api/v1/items/search` — Search catalog (Exact BST or substring database search).
-* `GET` `/api/v1/items/alphabetical` — Retrieve the full catalog ordered alphabetically.
-* `GET` `/api/v1/items/range` — Perform a range search on titles (e.g. `start=A&end=M`).
-* `GET` `/api/v1/items/{id}` — Get detailed specifications of an item.
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/auth/register` | Public | Register a new member |
+| `POST` | `/auth/login` | Public | Login → returns `{ access_token, token_type }` |
 
-### 💳 Loans & Checkout
-* `POST` `/api/v1/loans/checkout/{item_id}` *(Member)* — Checkout a library item.
-* `POST` `/api/v1/loans/{loan_id}/return` *(Member)* — Return an item and evaluate overdue fines.
-* `GET` `/api/v1/loans/my` *(Member)* — View active and past loans of the current member.
-* `GET` `/api/v1/loans/overdue` *(Admin)* — Fetch all overdue loans in the system.
+### 📚 Catalog
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/items/books` | Admin | Add a physical book |
+| `POST` | `/items/ebooks` | Admin | Add a digital e-book |
+| `POST` | `/items/journals` | Admin | Add a serial journal |
+| `GET` | `/items/search?title=&exact=` | Public | Search catalog by title |
+| `GET` | `/items/alphabetical` | Public | Full catalog, sorted A–Z |
+| `GET` | `/items/range?start=&end=` | Public | Items with titles in a letter range |
+| `GET` | `/items/{id}` | Public | Get a single item by ID |
+
+### 💳 Loans
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/loans/checkout/{item_id}` | Member | Check out an item |
+| `POST` | `/loans/{loan_id}/return` | Member | Return an item (calculates fine) |
+| `GET` | `/loans/my` | Member | All loans for the current member |
+| `GET` | `/loans/overdue` | Admin | All overdue loans system-wide |
 
 ### ⏳ Reservations
-* `POST` `/api/v1/reservations/{item_id}` *(Member)* — Reserve a copy when none are available.
-* `POST` `/api/v1/reservations/{id}/cancel` *(Member)* — Cancel a pending reservation.
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/reservations/my` | Member | Current member's reservations |
+| `POST` | `/reservations/{item_id}` | Member | Place a reservation (returns queue position) |
+| `POST` | `/reservations/{id}/cancel` | Member | Cancel a pending reservation |
 
 ---
 
-## 💡 System Design Decisions
+## 💡 Design Decisions
 
-### Joined-Table Polymorphic Inheritance
-The catalog uses a polymorphic model hierarchy via **Joined-Table Inheritance**. The parent database table (`items`) contains mutual columns (`title`, `author`, `isbn`, `available_copies`). Separate child tables (`books`, `ebooks`, and `journals`) reference this row through foreign keys, fetching specialized attributes (such as `download_url` or `issue_number`) polymorphically.
+### Polymorphic Catalog — JPA JOINED Inheritance
+
+Items use `@Inheritance(strategy = InheritanceType.JOINED)` with a `item_type` discriminator column. The parent `items` table holds shared fields (`title`, `author`, `isbn`, `available_copies`). Child tables (`books`, `ebooks`, `journals`) extend it with type-specific fields.
+
+### Stateless JWT Security
+
+Login issues an **HS256 JWT** with `{ sub: memberId, role: "admin"|"member", exp }`. A `JwtAuthFilter` validates every request and populates the Spring Security context — no sessions, no state.
 
 ### Checkout & Loan Policies
-- **Concurrency Limit**: Members can only hold **one active loan** of any specific item at a time.
-- **Copy Controls**: When an item's `available_copies` is `0`, further loans are rejected with a `409 Conflict`.
-- **Loan Duration**: Defaults to **14 days** (customizable via `LOAN_PERIOD_DAYS` in `config.py`).
+
+- A member may only hold **one active loan** per item at a time (returns `409 Conflict` otherwise)
+- Checkout is blocked when `available_copies = 0` (`409 Conflict`)
+- Default loan period: **14 days** (configurable via `loan.period-days` in `application.properties`)
 
 ### Lazy Fine Calculation
-Overdue fines are not updated continuously in the database. Instead, they are calculated lazily **at return time**:
-$$\text{fine\_amount} = \max(0, \text{days\_overdue}) \times \text{FINE\_PER\_DAY}$$
-The default fine rate is **$0.50** per day.
+
+Fines are computed at **return time**, not continuously:
+
+```
+fine = max(0, days_overdue) × fine_per_day
+```
+
+Default rate: **$0.50 / day** (configurable via `loan.fine-per-day`)
 
 ### Automated Queue Promotion
-When a copy is returned, the reservation queue is evaluated:
-1. The earliest reservation marked as `WAITING` (ordered by `queue_position`) is identified.
-2. Its status is updated to `READY`, allocating the copy to that member.
-3. Cancellations set status to `CANCELLED` without changing queue numbers of other members to prevent write locks, preserving relative ordering efficiently.
+
+When an item is returned, the service automatically promotes the earliest `WAITING` reservation to `READY` status, so that member knows their copy is available to collect.
+
+---
+
+## ⚙️ Configuration
+
+Edit `backend/src/main/resources/application.properties`:
+
+| Property | Default | Description |
+|---|---|---|
+| `server.port` | `8000` | HTTP port |
+| `spring.datasource.url` | `jdbc:sqlite:../libtrack.db` | SQLite database path |
+| `jwt.secret` | *(change in prod)* | HMAC-SHA256 signing key |
+| `jwt.expiration-ms` | `86400000` | Token lifetime (24 h) |
+| `loan.period-days` | `14` | Default checkout duration |
+| `loan.fine-per-day` | `0.50` | Overdue fine rate (USD) |
