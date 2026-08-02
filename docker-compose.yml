@@ -7,12 +7,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./libtrack.db
-      - SECRET_KEY=CHANGE_ME_IN_PRODUCTION
-      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/libtrack.db
+      - JWT_SECRET=CHANGE_ME_IN_PRODUCTION
+      - JWT_EXPIRATION_MS=86400000
     volumes:
       # Persist the SQLite database file between container restarts
-      - libtrack-db:/app/libtrack.db
+      - libtrack-db:/app/data
     restart: unless-stopped
 
 volumes:

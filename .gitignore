@@ -1,4 +1,12 @@
+# Maven / Spring Boot
+target/
+*.jar
+*.war
+*.ear
+*.class
+
 # Python
+
 __pycache__/
 *.py[cod]
 *$py.class

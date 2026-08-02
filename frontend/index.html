@@ -5,30 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LibTrack — Library Management System</title>
   <meta name="description" content="LibTrack: A modern library management system with BST-powered search, loan tracking, and reservation queues." />
+  
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
   <style>
     /* ===== DESIGN TOKENS ===== */
     :root {
-      --bg-base:        #0a0d14;
-      --bg-surface:     #111827;
-      --bg-card:        rgba(255,255,255,0.04);
-      --bg-card-hover:  rgba(255,255,255,0.07);
-      --border:         rgba(255,255,255,0.08);
-      --border-focus:   rgba(139,92,246,0.6);
-      --accent:         #8b5cf6;
-      --accent-soft:    rgba(139,92,246,0.15);
-      --accent-2:       #06b6d4;
-      --success:        #10b981;
-      --warning:        #f59e0b;
-      --danger:         #ef4444;
-      --text-primary:   #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted:     #475569;
-      --radius:         12px;
-      --radius-sm:      8px;
-      --shadow:         0 8px 32px rgba(0,0,0,0.4);
-      --glow:           0 0 40px rgba(139,92,246,0.15);
+      --bg-base:        #060814;
+      --bg-surface:     #0c0f24;
+      --bg-card:        rgba(17, 24, 39, 0.45);
+      --bg-card-hover:  rgba(27, 38, 59, 0.6);
+      --border:         rgba(255, 255, 255, 0.05);
+      --border-focus:   rgba(139, 92, 246, 0.5);
+      --accent:         #a78bfa; /* Violet light */
+      --accent-solid:   #8b5cf6; /* Violet */
+      --accent-soft:    rgba(139, 92, 246, 0.12);
+      --accent-2:       #22d3ee; /* Cyan */
+      --accent-2-soft:  rgba(34, 211, 238, 0.12);
+      --success:        #34d399; /* Emerald */
+      --success-soft:   rgba(52, 211, 153, 0.12);
+      --warning:        #fbbf24; /* Amber */
+      --warning-soft:   rgba(251, 191, 36, 0.12);
+      --danger:         #f87171; /* Rose */
+      --danger-soft:    rgba(248, 113, 113, 0.12);
+      --text-primary:   #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted:     #64748b;
+      --radius:         16px;
+      --radius-sm:      10px;
+      --shadow:         0 10px 40px -10px rgba(0,0,0,0.5);
+      --glow:           0 0 50px rgba(139, 92, 246, 0.12);
     }
 
     /* ===== RESET & BASE ===== */
@@ -36,25 +46,31 @@
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg-base);
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(34, 211, 238, 0.1) 0px, transparent 50%);
       color: var(--text-primary);
       min-height: 100vh;
       line-height: 1.6;
+      overflow-x: hidden;
     }
     img { max-width: 100%; }
     button { cursor: pointer; font-family: inherit; }
     input, select, textarea { font-family: inherit; }
 
     /* ===== SCROLLBAR ===== */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg-surface); }
-    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-solid); }
 
     /* ===== NOISE OVERLAY ===== */
     body::before {
       content: '';
       position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
       pointer-events: none; z-index: 0;
     }
 
@@ -63,71 +79,106 @@
 
     /* ===== HEADER ===== */
     header {
-      background: rgba(10,13,20,0.9);
+      background: rgba(6, 8, 20, 0.75);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 100;
       padding: 0 2rem;
     }
     .header-inner {
-      max-width: 1200px; margin: 0 auto;
+      max-width: 1280px; margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
-      height: 64px; gap: 1rem;
+      height: 72px; gap: 1rem;
     }
     .logo {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 1.2rem; font-weight: 700; color: var(--text-primary);
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem; font-weight: 800; color: var(--text-primary);
       text-decoration: none;
+      letter-spacing: -0.02em;
     }
     .logo-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-solid), var(--accent-2));
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+      color: white;
     }
-    .logo span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo span { 
+      background: linear-gradient(90deg, var(--text-primary), var(--accent)); 
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+    }
 
-    nav { display: flex; gap: 0.25rem; }
+    nav { display: flex; gap: 0.5rem; }
     .nav-btn {
       background: none; border: none; color: var(--text-secondary);
-      padding: 0.5rem 1rem; border-radius: var(--radius-sm);
-      font-size: 0.875rem; font-weight: 500; transition: all 0.2s;
+      padding: 0.6rem 1.1rem; border-radius: var(--radius-sm);
+      font-size: 0.9rem; font-weight: 500; transition: all 0.25s ease;
+      display: flex; align-items: center; gap: 8px;
     }
     .nav-btn:hover { background: var(--bg-card); color: var(--text-primary); }
-    .nav-btn.active { background: var(--accent-soft); color: var(--accent); }
+    .nav-btn.active { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(139, 92, 246, 0.15); }
+    .nav-btn svg { width: 16px; height: 16px; }
 
-    .header-right { display: flex; align-items: center; gap: 0.75rem; }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .user-profile-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .user-email-text {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
     .badge {
-      font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem;
-      border-radius: 20px; background: var(--accent-soft); color: var(--accent);
+      font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.6rem;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+      display: inline-flex; align-items: center; gap: 4px;
     }
-    .badge.admin { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge.member { background: var(--accent-2-soft); color: var(--accent-2); border: 1px solid rgba(34, 211, 238, 0.2); }
+    .badge.admin { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.2); }
+    
     .btn-sm {
-      font-size: 0.8rem; padding: 0.4rem 0.9rem; border-radius: var(--radius-sm);
+      font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm);
       border: 1px solid var(--border); background: var(--bg-card);
-      color: var(--text-secondary); transition: all 0.2s; font-weight: 500;
+      color: var(--text-secondary); transition: all 0.2s; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
     }
-    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm:hover { border-color: var(--accent-solid); color: var(--accent); background: var(--accent-soft); }
 
     /* ===== MAIN ===== */
-    main { max-width: 1200px; margin: 0 auto; padding: 2rem; width: 100%; }
+    main { max-width: 1280px; margin: 0 auto; padding: 2.5rem 2rem; width: 100%; box-sizing: border-box; }
 
     /* ===== VIEWS ===== */
-    .view { display: none; animation: fadeIn 0.3s ease; }
+    .view { display: none; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .view.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(12px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
 
     /* ===== PAGE HEADERS ===== */
-    .page-header { margin-bottom: 2rem; }
-    .page-header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.35rem; }
-    .page-header p { color: var(--text-secondary); font-size: 0.9rem; }
+    .page-header { margin-bottom: 2.5rem; position: relative; }
+    .page-header h1 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+    .page-header p { color: var(--text-secondary); font-size: 1.05rem; max-width: 700px; }
 
     /* ===== GRID LAYOUTS ===== */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    @media (max-width: 968px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
     @media (max-width: 768px) {
       .grid-2, .grid-3 { grid-template-columns: 1fr; }
       nav { display: none; }
+      .header-inner { padding: 0 1rem; }
+      .search-row { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+      .search-row .btn { width: 100% !important; }
+      .search-row .form-group { width: 100%; margin-bottom: 0.5rem; }
+      .search-row div[style*="min-width"] { min-width: 0 !important; width: 100%; margin-bottom: 0.5rem; }
     }
 
     /* ===== CARD ===== */
@@ -135,193 +186,268 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-      transition: border-color 0.2s, box-shadow 0.2s;
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow);
     }
-    .card:hover { border-color: rgba(139,92,246,0.3); }
-    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
-    .card h2 .icon { font-size: 1.1rem; }
+    .card:hover { border-color: rgba(139,92,246,0.25); box-shadow: var(--glow); }
+    .card h2 { 
+      font-family: 'Outfit', sans-serif; 
+      font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-primary); 
+      display: flex; align-items: center; gap: 10px; 
+    }
+    .card h2 svg { color: var(--accent); }
+
+    /* ===== INFO / POLICY BANNER ===== */
+    .info-banner {
+      background: rgba(139, 92, 246, 0.06);
+      border-left: 4px solid var(--accent-solid);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      border-top: 1px solid rgba(139, 92, 246, 0.1);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+      border-right: 1px solid rgba(139, 92, 246, 0.1);
+    }
+    .info-banner-icon { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+    .info-banner-content h4 { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-primary); }
+    .info-banner-content p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; }
 
     /* ===== FORM ELEMENTS ===== */
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; letter-spacing: 0.03em; text-transform: uppercase; }
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .input-wrapper { position: relative; display: flex; align-items: center; }
+    .input-wrapper svg { position: absolute; left: 1rem; color: var(--text-muted); width: 18px; height: 18px; }
     input[type=text], input[type=email], input[type=password], input[type=number], select {
-      width: 100%; padding: 0.65rem 0.9rem;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      width: 100%; padding: 0.8rem 1.1rem;
+      background: rgba(6, 8, 20, 0.6); border: 1px solid var(--border);
       border-radius: var(--radius-sm); color: var(--text-primary);
-      font-size: 0.9rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      font-size: 0.92rem; outline: none; transition: all 0.25s ease;
     }
-    input:focus, select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
-    input::placeholder { color: var(--text-muted); }
+    .input-wrapper input, .input-wrapper select { padding-left: 2.75rem !important; }
+    input:focus, select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(139,92,246,0.15); background: rgba(6, 8, 20, 0.85); }
+    input::placeholder { color: rgba(255, 255, 255, 0.25); }
     select option { background: var(--bg-surface); }
+    .form-help { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.4; display: block; }
 
     /* ===== BUTTONS ===== */
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      padding: 0.65rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.875rem;
-      font-weight: 600; border: none; transition: all 0.2s; width: 100%;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 0.8rem 1.5rem; border-radius: var(--radius-sm); font-size: 0.9rem;
+      font-weight: 600; border: none; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); width: 100%;
     }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), #7c3aed); color: white; box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,92,246,0.4); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent-solid), #7c3aed); color: white; box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139,92,246,0.5); }
     .btn-primary:active { transform: translateY(0); }
+    
     .btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-    .btn-danger { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
-    .btn-danger:hover { background: rgba(239,68,68,0.25); }
-    .btn-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--success); }
-    .btn-success:hover { background: rgba(16,185,129,0.25); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
-    .btn-icon { width: auto; padding: 0.5rem; border-radius: var(--radius-sm); }
+    .btn-secondary:hover { border-color: var(--accent-solid); color: var(--accent); background: var(--accent-soft); }
+    
+    .btn-danger { background: var(--danger-soft); border: 1px solid rgba(248, 113, 113, 0.25); color: var(--danger); }
+    .btn-danger:hover { background: rgba(248, 113, 113, 0.2); border-color: var(--danger); transform: translateY(-1px); }
+    
+    .btn-success { background: var(--success-soft); border: 1px solid rgba(52, 211, 153, 0.25); color: var(--success); }
+    .btn-success:hover { background: rgba(52, 211, 153, 0.2); border-color: var(--success); transform: translateY(-1px); }
+    
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     /* ===== SEARCH ROW ===== */
-    .search-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+    .search-row { display: flex; gap: 1rem; align-items: flex-end; }
     .search-row .form-group { flex: 1; margin: 0; }
-    .search-row .btn { width: auto; white-space: nowrap; }
-    .search-toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .search-row .btn { width: auto; white-space: nowrap; height: 46px; }
+    .search-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(6, 8, 20, 0.5); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
     .toggle-btn {
-      flex: 1; padding: 0.5rem; font-size: 0.8rem; font-weight: 500;
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      background: none; color: var(--text-secondary); transition: all 0.2s;
+      flex: 1; padding: 0.6rem; font-size: 0.85rem; font-weight: 600;
+      border: none; border-radius: 6px;
+      background: none; color: var(--text-secondary); transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .toggle-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .toggle-btn.active { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(139, 92, 246, 0.15); }
+    .toggle-btn:hover:not(.active) { color: var(--text-primary); }
 
     /* ===== ITEM CARD ===== */
     .item-card {
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.25rem;
-      transition: all 0.2s; position: relative; overflow: hidden;
+      border-radius: var(--radius); padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow);
     }
     .item-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
       background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      opacity: 0; transition: opacity 0.2s;
+      opacity: 0; transition: opacity 0.25s ease;
     }
-    .item-card:hover { border-color: rgba(139,92,246,0.35); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .item-card:hover { border-color: rgba(139,92,246,0.3); transform: translateY(-4px); box-shadow: var(--glow); }
     .item-card:hover::before { opacity: 1; }
-    .item-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem; }
-    .item-card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
-    .item-card-author { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem; }
+    .item-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; }
+    .item-card-title { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
+    .item-card-author { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; font-weight: 500; }
     .item-type-badge {
-      font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem;
-      border-radius: 6px; white-space: nowrap; flex-shrink: 0;
+      font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.6rem;
+      border-radius: 20px; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.03em;
+      text-transform: uppercase; border: 1px solid transparent;
     }
-    .type-book { background: rgba(139,92,246,0.15); color: var(--accent); }
-    .type-ebook { background: rgba(6,182,212,0.15); color: var(--accent-2); }
-    .type-journal { background: rgba(245,158,11,0.15); color: var(--warning); }
-    .item-card-meta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .type-book { background: var(--accent-soft); color: var(--accent); border-color: rgba(139, 92, 246, 0.2); }
+    .type-ebook { background: var(--accent-2-soft); color: var(--accent-2); border-color: rgba(34, 211, 238, 0.2); }
+    .type-journal { background: var(--warning-soft); color: var(--warning); border-color: rgba(251, 191, 36, 0.2); }
+    
+    .item-card-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; padding-top: 1rem; }
     .meta-chip {
-      font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.04);
-      padding: 0.2rem 0.5rem; border-radius: 6px; border: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--text-secondary); background: rgba(255,255,255,0.03);
+      padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);
+      display: inline-flex; align-items: center; gap: 4px;
     }
     .avail-chip {
-      font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 6px;
+      display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent;
     }
-    .avail-yes { background: rgba(16,185,129,0.15); color: var(--success); }
-    .avail-no { background: rgba(239,68,68,0.15); color: var(--danger); }
-    .item-card-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
-    .item-card-actions .btn { font-size: 0.8rem; padding: 0.45rem 0.75rem; }
+    .avail-yes { background: var(--success-soft); color: var(--success); border-color: rgba(52, 211, 153, 0.15); }
+    .avail-no { background: var(--danger-soft); color: var(--danger); border-color: rgba(248, 113, 113, 0.15); }
+    
+    .item-card-actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; }
+    .item-card-actions .btn { font-size: 0.8rem; padding: 0.55rem 0.85rem; border-radius: var(--radius-sm); }
 
     /* ===== LOAN CARD ===== */
     .loan-card {
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.25rem; transition: all 0.2s;
+      border-radius: var(--radius); padding: 1.5rem; transition: all 0.25s ease;
+      position: relative;
     }
-    .loan-card:hover { border-color: rgba(139,92,246,0.3); }
-    .loan-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-    .loan-id { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
-    .loan-status { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 6px; text-transform: capitalize; }
-    .status-active { background: rgba(6,182,212,0.15); color: var(--accent-2); }
-    .status-returned { background: rgba(16,185,129,0.15); color: var(--success); }
-    .status-overdue { background: rgba(239,68,68,0.15); color: var(--danger); }
-    .status-waiting { background: rgba(245,158,11,0.15); color: var(--warning); }
-    .status-ready { background: rgba(16,185,129,0.15); color: var(--success); }
-    .status-fulfilled { background: rgba(139,92,246,0.15); color: var(--accent); }
-    .status-cancelled { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
-    .loan-detail { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; display: flex; gap: 0.5rem; }
-    .loan-detail strong { color: var(--text-primary); }
-    .fine-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.6rem; border-radius: 8px; background: rgba(239,68,68,0.12); color: var(--danger); margin-top: 0.5rem; }
+    .loan-card:hover { border-color: rgba(139,92,246,0.25); box-shadow: var(--shadow); }
+    .loan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 1rem; }
+    .loan-id { font-size: 0.8rem; color: var(--text-muted); font-family: monospace; line-height: 1.4; }
+    .loan-title-text { display: block; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-top: 0.2rem; }
+    .loan-status { font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid transparent; }
+    
+    .status-active { background: var(--accent-2-soft); color: var(--accent-2); border-color: rgba(34, 211, 238, 0.2); }
+    .status-returned { background: var(--success-soft); color: var(--success); border-color: rgba(52, 211, 153, 0.2); }
+    .status-overdue { background: var(--danger-soft); color: var(--danger); border-color: rgba(248, 113, 113, 0.2); }
+    .status-waiting { background: var(--warning-soft); color: var(--warning); border-color: rgba(251, 191, 36, 0.2); }
+    .status-ready { background: var(--success-soft); color: var(--success); border-color: rgba(52, 211, 153, 0.2); }
+    .status-fulfilled { background: var(--accent-soft); color: var(--accent); border-color: rgba(139, 92, 246, 0.2); }
+    .status-cancelled { background: rgba(255,255,255,0.03); color: var(--text-muted); border-color: var(--border); }
+    
+    .loan-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem 1.5rem; margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+    .loan-detail { font-size: 0.85rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+    .loan-detail span { color: var(--text-muted); font-size: 0.8rem; }
+    .loan-detail strong { color: var(--text-primary); font-weight: 600; }
+    
+    .fine-badge { 
+      display: inline-flex; align-items: center; gap: 6px; 
+      font-size: 0.8rem; font-weight: 700; padding: 0.4rem 0.8rem; 
+      border-radius: 8px; background: var(--danger-soft); color: var(--danger); 
+      margin-top: 1rem; border: 1px solid rgba(248, 113, 113, 0.2); 
+    }
 
     /* ===== DIVIDER ===== */
-    .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+    .divider { height: 1px; background: var(--border); margin: 2rem 0; }
 
     /* ===== TABS ===== */
-    .tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1px; }
     .tab {
-      padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 500; background: none;
+      padding: 0.75rem 1.25rem; font-size: 0.9rem; font-weight: 600; background: none;
       border: none; color: var(--text-secondary); position: relative;
-      border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px;
+      border-bottom: 2px solid transparent; transition: all 0.25s ease; margin-bottom: -2px;
+      display: flex; align-items: center; gap: 8px;
     }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
     .tab:hover:not(.active) { color: var(--text-primary); }
+    .tab svg { width: 16px; height: 16px; }
 
     /* ===== ALERT / TOAST ===== */
-    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
     .toast {
-      min-width: 260px; max-width: 360px; padding: 0.9rem 1.1rem;
-      border-radius: var(--radius); font-size: 0.875rem; font-weight: 500;
-      backdrop-filter: blur(12px); border: 1px solid; animation: slideIn 0.3s ease;
-      display: flex; align-items: center; gap: 0.6rem;
+      min-width: 320px; max-width: 420px; padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 500;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+      border: 1px solid; animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes slideOut { to { transform: translateX(110%); opacity: 0; } }
-    .toast-success { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #6ee7b7; }
-    .toast-error { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
-    .toast-info { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { to { transform: translateX(120%); opacity: 0; } }
+    .toast-success { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); color: #6ee7b7; }
+    .toast-error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+    .toast-info { background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.25); color: #c4b5fd; }
+    .toast-icon { display: flex; align-items: center; justify-content: center; }
 
     /* ===== EMPTY STATE ===== */
-    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
-    .empty .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-    .empty p { font-size: 0.9rem; }
+    .empty { text-align: center; padding: 4rem 2rem; color: var(--text-muted); border: 1px dashed var(--border); border-radius: var(--radius); background: rgba(255,255,255,0.01); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.6; display: flex; justify-content: center; color: var(--text-muted); }
+    .empty p { font-size: 0.95rem; font-weight: 500; }
 
     /* ===== SPINNER ===== */
-    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ===== STAT CARDS ===== */
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem; }
     @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 550px) { .stats { grid-template-columns: 1fr; } }
     .stat-card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.25rem; position: relative; overflow: hidden;
+      padding: 1.5rem; position: relative; overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 1.25rem;
     }
-    .stat-card::after {
-      content: attr(data-icon); position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
-      font-size: 2rem; opacity: 0.08;
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--accent-soft); color: var(--accent);
+      flex-shrink: 0;
     }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
-    .stat-value { font-size: 1.75rem; font-weight: 700; }
-    .stat-value.accent { color: var(--accent); }
-    .stat-value.cyan { color: var(--accent-2); }
-    .stat-value.green { color: var(--success); }
-    .stat-value.red { color: var(--danger); }
+    .stat-card.cyan .stat-icon { background: var(--accent-2-soft); color: var(--accent-2); }
+    .stat-card.green .stat-icon { background: var(--success-soft); color: var(--success); }
+    .stat-card.red .stat-icon { background: var(--danger-soft); color: var(--danger); }
+    .stat-info { display: flex; flex-direction: column; }
+    .stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .stat-value { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--text-primary); }
 
     /* ===== LOGIN SCREEN ===== */
-    .auth-container { max-width: 420px; margin: 4rem auto; }
-    .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; backdrop-filter: blur(12px); box-shadow: var(--glow); }
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .auth-container { max-width: 440px; width: 100%; }
+    .auth-card { 
+      background: rgba(12, 15, 36, 0.7); 
+      border: 1px solid rgba(139, 92, 246, 0.15); 
+      border-radius: 24px; padding: 2.5rem; 
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), var(--glow); 
+    }
     .auth-logo { text-align: center; margin-bottom: 2rem; }
     .auth-logo .logo-icon { width: 56px; height: 56px; margin: 0 auto 0.75rem; border-radius: 16px; font-size: 1.5rem; }
-    .auth-logo h1 { font-size: 1.4rem; font-weight: 700; }
-    .auth-logo p { color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem; }
-    .auth-tabs { display: flex; margin-bottom: 1.5rem; gap: 0.25rem; }
+    .auth-logo h1 { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 0.5rem; }
+    .auth-logo p { color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.35rem; }
+    .auth-tabs { display: flex; margin-bottom: 2rem; gap: 0.5rem; background: rgba(6, 8, 20, 0.6); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
     .auth-tab {
-      flex: 1; padding: 0.6rem; text-align: center; font-size: 0.875rem; font-weight: 600;
-      border: 1px solid var(--border); border-radius: var(--radius-sm); background: none;
-      color: var(--text-secondary); transition: all 0.2s;
+      flex: 1; padding: 0.7rem; text-align: center; font-size: 0.9rem; font-weight: 600;
+      border: none; border-radius: var(--radius-sm); background: none;
+      color: var(--text-secondary); transition: all 0.25s ease;
     }
-    .auth-tab.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .auth-tab.active { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(139, 92, 246, 0.15); }
 
     /* ===== SECTION HEADER ===== */
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-    .section-header h2 { font-size: 1rem; font-weight: 600; }
-    .section-header .btn { width: auto; font-size: 0.8rem; padding: 0.45rem 1rem; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .section-header h2 { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .section-header .btn { width: auto; font-size: 0.82rem; padding: 0.5rem 1rem; border-radius: var(--radius-sm); }
 
     /* ===== PROGRESS BAR ===== */
-    .progress-row { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 0.6rem; }
-    .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.5s ease; }
+    .progress-row { height: 6px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; margin-top: 0.8rem; border: 1px solid rgba(255,255,255,0.02); }
+    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-solid), var(--accent-2)); transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 
     /* ===== SCROLLABLE LIST ===== */
-    .scroll-list { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.25rem; }
+    .scroll-list { max-height: 480px; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding-right: 0.4rem; }
   </style>
 </head>
 <body>
@@ -329,13 +455,13 @@
 <div id="toast-container"></div>
 
 <!-- ===== AUTH SCREEN ===== -->
-<div id="auth-screen">
+<div id="auth-screen" class="auth-page">
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-logo">
-        <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;">📚</div>
+        <div class="logo-icon">📚</div>
         <h1>LibTrack</h1>
-        <p>Library Management System</p>
+        <p>Intelligent Library Management System</p>
       </div>
 
       <div class="auth-tabs">
@@ -346,31 +472,52 @@
       <!-- LOGIN -->
       <div id="login-form">
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="login-email" placeholder="you@example.com" />
+          <label>Email Address</label>
+          <div class="input-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" id="login-email" placeholder="name@domain.com" />
+          </div>
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="login-password" placeholder="••••••••" />
+          <div class="input-wrapper">
+            <i data-lucide="lock"></i>
+            <input type="password" id="login-password" placeholder="••••••••" />
+          </div>
         </div>
-        <button class="btn btn-primary" onclick="login()" id="login-btn">Sign In</button>
+        <button class="btn btn-primary" onclick="login()" id="login-btn">
+          <span>Sign In</span>
+          <i data-lucide="arrow-right"></i>
+        </button>
       </div>
 
       <!-- REGISTER -->
       <div id="register-form" style="display:none;">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" id="reg-name" placeholder="Jane Doe" />
+          <div class="input-wrapper">
+            <i data-lucide="user"></i>
+            <input type="text" id="reg-name" placeholder="John Doe" />
+          </div>
         </div>
         <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="reg-email" placeholder="you@example.com" />
+          <label>Email Address</label>
+          <div class="input-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" id="reg-email" placeholder="name@domain.com" />
+          </div>
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="reg-password" placeholder="••••••••" />
+          <div class="input-wrapper">
+            <i data-lucide="lock"></i>
+            <input type="password" id="reg-password" placeholder="Minimum 6 characters" />
+          </div>
         </div>
-        <button class="btn btn-primary" onclick="register()" id="register-btn">Create Account</button>
+        <button class="btn btn-primary" onclick="register()" id="register-btn">
+          <span>Create Account</span>
+          <i data-lucide="user-plus"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -381,21 +528,36 @@
 
   <header>
     <div class="header-inner">
-      <a class="logo" href="#">
-        <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;font-size:1rem;">📚</div>
+      <a class="logo" href="#" onclick="showView('dashboard')">
+        <div class="logo-icon"><i data-lucide="library" style="width:20px;height:20px;"></i></div>
         <span>LibTrack</span>
       </a>
       <nav>
-        <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard">Dashboard</button>
-        <button class="nav-btn" onclick="showView('catalog')" id="nav-catalog">Catalog</button>
-        <button class="nav-btn" onclick="showView('loans')" id="nav-loans">My Loans</button>
-        <button class="nav-btn" onclick="showView('reservations')" id="nav-reservations">Reservations</button>
-        <button class="nav-btn" onclick="showView('admin')" id="nav-admin" style="display:none;">Admin</button>
+        <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard">
+          <i data-lucide="layout-dashboard"></i>Dashboard
+        </button>
+        <button class="nav-btn" onclick="showView('catalog')" id="nav-catalog">
+          <i data-lucide="book-open"></i>Catalog
+        </button>
+        <button class="nav-btn" onclick="showView('loans')" id="nav-loans">
+          <i data-lucide="book-copy"></i>My Loans
+        </button>
+        <button class="nav-btn" onclick="showView('reservations')" id="nav-reservations">
+          <i data-lucide="clock"></i>Reservations
+        </button>
+        <button class="nav-btn" onclick="showView('admin')" id="nav-admin" style="display:none;">
+          <i data-lucide="shield-alert"></i>Admin Panel
+        </button>
       </nav>
       <div class="header-right">
-        <span id="role-badge" class="badge">member</span>
-        <span id="user-name" style="font-size:0.85rem;color:var(--text-secondary);"></span>
-        <button class="btn-sm" onclick="logout()">Sign out</button>
+        <div class="user-profile-info">
+          <span id="user-email" class="user-email-text">—</span>
+          <span id="role-badge" class="badge member">member</span>
+        </div>
+        <button class="btn-sm" onclick="logout()">
+          <i data-lucide="log-out" style="width:14px;height:14px;"></i>
+          <span>Sign Out</span>
+        </button>
       </div>
     </div>
   </header>
@@ -405,42 +567,68 @@
     <!-- ===== DASHBOARD ===== -->
     <div class="view active" id="view-dashboard">
       <div class="page-header">
-        <h1>Welcome back 👋</h1>
-        <p>Here's what's happening in your library today.</p>
+        <h1>Welcome Back 👋</h1>
+        <p>Here is your overview of checkout operations and reservation states.</p>
       </div>
 
       <div class="stats" id="stats-row">
-        <div class="stat-card" data-icon="📚">
-          <div class="stat-label">Total Items</div>
-          <div class="stat-value accent" id="stat-items">—</div>
+        <div class="stat-card">
+          <div class="stat-icon"><i data-lucide="layers"></i></div>
+          <div class="stat-info">
+            <div class="stat-label">Total Cataloged</div>
+            <div class="stat-value" id="stat-items">—</div>
+          </div>
         </div>
-        <div class="stat-card" data-icon="📖">
-          <div class="stat-label">Active Loans</div>
-          <div class="stat-value cyan" id="stat-active">—</div>
+        <div class="stat-card cyan">
+          <div class="stat-icon"><i data-lucide="book-open"></i></div>
+          <div class="stat-info">
+            <div class="stat-label">Active Loans</div>
+            <div class="stat-value" id="stat-active">—</div>
+          </div>
         </div>
-        <div class="stat-card" data-icon="✅">
-          <div class="stat-label">Returned</div>
-          <div class="stat-value green" id="stat-returned">—</div>
+        <div class="stat-card green">
+          <div class="stat-icon"><i data-lucide="check-circle-2"></i></div>
+          <div class="stat-info">
+            <div class="stat-label">Total Returned</div>
+            <div class="stat-value" id="stat-returned">—</div>
+          </div>
         </div>
-        <div class="stat-card" data-icon="⏰">
-          <div class="stat-label">Overdue</div>
-          <div class="stat-value red" id="stat-overdue">—</div>
+        <div class="stat-card red">
+          <div class="stat-icon"><i data-lucide="alert-triangle"></i></div>
+          <div class="stat-info">
+            <div class="stat-label">Overdue Loans</div>
+            <div class="stat-value" id="stat-overdue">—</div>
+          </div>
         </div>
       </div>
 
       <div class="grid-2">
         <div class="card">
-          <h2><span class="icon">📖</span> Recent Loans</h2>
+          <h2><i data-lucide="history"></i> Recent Activity</h2>
           <div id="dash-loans" class="scroll-list"></div>
         </div>
         <div class="card">
-          <h2><span class="icon">🔖</span> Quick Checkout</h2>
-          <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1rem;">Enter an item ID to checkout directly.</p>
-          <div class="form-group">
-            <label>Item ID</label>
-            <input type="number" id="quick-item-id" placeholder="e.g. 3" min="1" />
+          <h2><i data-lucide="barcode"></i> Quick Loan Processing</h2>
+          
+          <div class="info-banner">
+            <i data-lucide="info" class="info-banner-icon"></i>
+            <div class="info-banner-content">
+              <h4>Quick Checkout Guideline</h4>
+              <p>Borrow catalog items directly by ID. Checkouts are authorized for 14 days. Limit of 1 active loan per item.</p>
+            </div>
           </div>
-          <button class="btn btn-primary" onclick="quickCheckout()">Checkout Item</button>
+
+          <div class="form-group">
+            <label>Item Catalog ID</label>
+            <div class="input-wrapper">
+              <i data-lucide="tag"></i>
+              <input type="number" id="quick-item-id" placeholder="Enter Item ID (e.g. 1)" min="1" />
+            </div>
+            <span class="form-help">Enter a valid item ID from the Catalog. If copies are available, the checkout is instant.</span>
+          </div>
+          <button class="btn btn-primary" onclick="quickCheckout()">
+            <i data-lucide="play"></i> Checkout Item
+          </button>
         </div>
       </div>
     </div>
@@ -448,52 +636,103 @@
     <!-- ===== CATALOG ===== -->
     <div class="view" id="view-catalog">
       <div class="page-header">
-        <h1>Catalog</h1>
-        <p>Browse and search the library catalog. Exact-match uses the BST index; substring falls back to the database.</p>
+        <h1>Library Catalog</h1>
+        <p>Explore media titles. Exact searches use our in-memory Binary Search Tree (BST); substring queries utilize the SQL DB.</p>
       </div>
 
-      <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card" style="margin-bottom:2rem;">
         <div class="search-toggle">
-          <button class="toggle-btn active" onclick="setCatalogMode('search')" id="mode-search">🔍 Search</button>
-          <button class="toggle-btn" onclick="setCatalogMode('alpha')" id="mode-alpha">🔤 Alphabetical</button>
-          <button class="toggle-btn" onclick="setCatalogMode('range')" id="mode-range">📏 Range</button>
+          <button class="toggle-btn active" onclick="setCatalogMode('search')" id="mode-search">
+            <i data-lucide="search"></i> Search Queries
+          </button>
+          <button class="toggle-btn" onclick="setCatalogMode('alpha')" id="mode-alpha">
+            <i data-lucide="sort-asc"></i> Alphabetical BST Walk
+          </button>
+          <button class="toggle-btn" onclick="setCatalogMode('range')" id="mode-range">
+            <i data-lucide="sliders-horizontal"></i> Range Search
+          </button>
         </div>
 
+        <!-- SEARCH SEARCH -->
         <div id="panel-search">
+          <div class="info-banner">
+            <i data-lucide="info" class="info-banner-icon"></i>
+            <div class="info-banner-content">
+              <h4>Search Engine Modes</h4>
+              <p><strong>Exact match (BST)</strong>: Queries the cached in-memory tree in $O(\log n)$ time. Case-insensitive.<br>
+              <strong>Standard match</strong>: Performs a database-wide substring query across titles.</p>
+            </div>
+          </div>
+
           <div class="search-row">
             <div class="form-group">
-              <label>Title</label>
-              <input type="text" id="search-title" placeholder="e.g. Clean Code" />
+              <label>Title Query</label>
+              <div class="input-wrapper">
+                <i data-lucide="text-cursor-input"></i>
+                <input type="text" id="search-title" placeholder="Search title (e.g., Clean Code)" />
+              </div>
             </div>
-            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;color:var(--text-secondary);font-size:0.8rem;white-space:nowrap;padding-bottom:0;margin:0 0 1rem;">
-              <input type="checkbox" id="search-exact" style="width:auto;" /> Exact match (BST)
-            </label>
-            <button class="btn btn-primary" style="width:auto;" onclick="searchCatalog()">Search</button>
-            <button class="btn btn-secondary" style="width:auto;" onclick="loadAllItems()">All</button>
+            <div class="form-group" style="flex:0; min-width: 200px; display: flex; align-items: center; margin-bottom: 0.5rem;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; margin:0; text-transform:none; font-size:0.85rem; font-weight:500;">
+                <input type="checkbox" id="search-exact" style="width:16px; height:16px; accent-color:var(--accent-solid);" /> Exact match (BST cache)
+              </label>
+            </div>
+            <button class="btn btn-primary" onclick="searchCatalog()">
+              <i data-lucide="search"></i> Search
+            </button>
+            <button class="btn btn-secondary" onclick="loadAllItems()">
+              <i data-lucide="list-filter"></i> All Items
+            </button>
           </div>
         </div>
 
+        <!-- ALPHABETICAL SEARCH -->
         <div id="panel-alpha" style="display:none;">
-          <button class="btn btn-primary" onclick="loadAlphabetical()">Load Alphabetical</button>
+          <div class="info-banner">
+            <i data-lucide="info" class="info-banner-icon"></i>
+            <div class="info-banner-content">
+              <h4>Alphabetical Sorting Traversal</h4>
+              <p>Retrieves all items sorted alphabetically. Leverages an **in-order traversal** of the active BST index. Bypasses database sorting overhead to run in $O(n)$ time.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width:auto;" onclick="loadAlphabetical()">
+            <i data-lucide="play"></i> Walk BST Alphabetically
+          </button>
         </div>
 
+        <!-- RANGE SEARCH -->
         <div id="panel-range" style="display:none;">
+          <div class="info-banner">
+            <i data-lucide="info" class="info-banner-icon"></i>
+            <div class="info-banner-content">
+              <h4>Lexicographical Bounds Search</h4>
+              <p>Queries titles starting between bounds (e.g., "A" to "M") by seeking the range directly within the BST nodes. Time complexity is $O(\log n + k)$.</p>
+            </div>
+          </div>
           <div class="search-row">
             <div class="form-group">
-              <label>From title</label>
-              <input type="text" id="range-start" placeholder="e.g. A" />
+              <label>Starting Alphabetical Boundary</label>
+              <div class="input-wrapper">
+                <i data-lucide="arrow-right-to-line"></i>
+                <input type="text" id="range-start" placeholder="e.g. A" />
+              </div>
             </div>
             <div class="form-group">
-              <label>To title</label>
-              <input type="text" id="range-end" placeholder="e.g. M" />
+              <label>Ending Alphabetical Boundary</label>
+              <div class="input-wrapper">
+                <i data-lucide="arrow-left-to-line"></i>
+                <input type="text" id="range-end" placeholder="e.g. M" />
+              </div>
             </div>
-            <button class="btn btn-primary" style="width:auto;" onclick="loadRange()">Query</button>
+            <button class="btn btn-primary" onclick="loadRange()">
+              <i data-lucide="sliders-horizontal"></i> Query Range
+            </button>
           </div>
         </div>
       </div>
 
       <div class="section-header">
-        <h2>Results <span id="catalog-count" style="color:var(--text-muted);font-size:0.85rem;font-weight:400;"></span></h2>
+        <h2>Catalog Results <span id="catalog-count" style="color:var(--text-muted);font-size:0.88rem;font-weight:500;">(0)</span></h2>
       </div>
       <div id="catalog-grid" class="grid-3"></div>
     </div>
@@ -501,32 +740,65 @@
     <!-- ===== LOANS ===== -->
     <div class="view" id="view-loans">
       <div class="page-header">
-        <h1>My Loans</h1>
-        <p>Track your checkouts, due dates, and any outstanding fines.</p>
+        <h1>My Library Loans</h1>
+        <p>Monitor your active checkouts, track returning dates, and inspect overdue fine balances.</p>
       </div>
 
-      <div class="grid-2" style="margin-bottom:2rem;">
-        <div class="card">
-          <h2><span class="icon">🛒</span> Checkout Item</h2>
-          <div class="form-group">
-            <label>Item ID</label>
-            <input type="number" id="checkout-item-id" placeholder="Enter item ID" min="1" />
-          </div>
-          <button class="btn btn-primary" onclick="checkoutItem()">Checkout</button>
-        </div>
-        <div class="card">
-          <h2><span class="icon">↩️</span> Return Item</h2>
-          <div class="form-group">
-            <label>Loan ID</label>
-            <input type="number" id="return-loan-id" placeholder="Enter loan ID" min="1" />
-          </div>
-          <button class="btn btn-success" onclick="returnItem()">Return</button>
+      <div class="info-banner">
+        <i data-lucide="alert-circle" class="info-banner-icon"></i>
+        <div class="info-banner-content">
+          <h4>Loan Policy Guidelines</h4>
+          <p>
+            • Physical books, digital e-books, and journals are checked out for a maximum of <strong>14 days</strong>.<br>
+            • Returned checkouts are calculated dynamically. Late returns accumulate a fine of <strong>$0.50 per day</strong>.<br>
+            • Fines must be checked and paid through the administration system. Fines are lazily computed upon return.
+          </p>
         </div>
       </div>
 
-      <div class="section-header">
-        <h2>Loan History</h2>
-        <button class="btn btn-secondary" onclick="loadMyLoans()">↻ Refresh</button>
+      <div class="grid-2" style="margin-bottom:2.5rem;">
+        <div class="card">
+          <h2><i data-lucide="plus-circle"></i> Manual Checkout</h2>
+          <div class="form-group">
+            <label>Item Catalog ID</label>
+            <div class="input-wrapper">
+              <i data-lucide="key-round"></i>
+              <input type="number" id="checkout-item-id" placeholder="Enter Item ID" min="1" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="checkoutItem()">
+            <i data-lucide="check"></i> Checkout Item
+          </button>
+        </div>
+        <div class="card">
+          <h2><i data-lucide="corner-up-left"></i> Manual Return</h2>
+          <div class="form-group">
+            <label>Loan Transaction ID</label>
+            <div class="input-wrapper">
+              <i data-lucide="hash"></i>
+              <input type="number" id="return-loan-id" placeholder="Enter Loan ID" min="1" />
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="returnItem()">
+            <i data-lucide="undo-2"></i> Return Item
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" id="loan-tab-active" onclick="switchLoanView('active')">
+          <i data-lucide="book-open"></i> Active Checkouts
+        </button>
+        <button class="tab" id="loan-tab-history" onclick="switchLoanView('history')">
+          <i data-lucide="history"></i> Returned History
+        </button>
+      </div>
+
+      <div class="section-header" style="margin-bottom: 1rem;">
+        <h2>Loan Records</h2>
+        <button class="btn btn-secondary" onclick="loadMyLoans()">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh List
+        </button>
       </div>
       <div id="loans-list" class="scroll-list" style="max-height:none;"></div>
     </div>
@@ -534,75 +806,150 @@
     <!-- ===== RESERVATIONS ===== -->
     <div class="view" id="view-reservations">
       <div class="page-header">
-        <h1>Reservations</h1>
-        <p>Reserve items currently on loan. You'll be notified when they become available.</p>
+        <h1>Reservation Queues</h1>
+        <p>If catalog items are currently checked out, reserve them to place yourself in a Priority FIFO Queue.</p>
       </div>
 
-      <div class="card" style="max-width:480px;margin-bottom:2rem;">
-        <h2><span class="icon">🔖</span> Reserve an Item</h2>
-        <div class="form-group">
-          <label>Item ID</label>
-          <input type="number" id="res-item-id" placeholder="Enter item ID" min="1" />
+      <div class="info-banner">
+        <i data-lucide="git-merge" class="info-banner-icon"></i>
+        <div class="info-banner-content">
+          <h4>Queue Promotion Rules</h4>
+          <p>When an item is returned, the reservation queue is processed in FIFO order. The first reservation is promoted to `ready`, allocating the copy. Cancel anytime if you no longer need the item.</p>
         </div>
-        <button class="btn btn-primary" onclick="reserveItem()">Add to Queue</button>
       </div>
 
-      <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:1.25rem;">
-        Your active reservations are listed below. Cancel any you no longer need.
-      </p>
+      <div class="card" style="max-width:520px; margin-bottom:2.5rem;">
+        <h2><i data-lucide="bookmark-plus"></i> Reserve catalog item</h2>
+        <div class="form-group">
+          <label>Item Catalog ID</label>
+          <div class="input-wrapper">
+            <i data-lucide="book-open"></i>
+            <input type="number" id="res-item-id" placeholder="Enter item ID (e.g. 2)" min="1" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="reserveItem()">
+          <i data-lucide="list-plus"></i> Join Reservation Queue
+        </button>
+      </div>
+
+      <div class="section-header">
+        <h2>Your Active Reservations</h2>
+        <button class="btn btn-secondary" onclick="loadMyReservations()">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh
+        </button>
+      </div>
       <div id="res-list" class="scroll-list" style="max-height:none;"></div>
     </div>
 
-    <!-- ===== ADMIN ===== -->
+    <!-- ===== ADMIN PANEL ===== -->
     <div class="view" id="view-admin">
       <div class="page-header">
-        <h1>Admin Panel</h1>
-        <p>Manage catalog items and review overdue loans.</p>
+        <h1>Admin Operations</h1>
+        <p>Manage catalog database entries, index collections, and audit outstanding overdue loans.</p>
       </div>
 
-      <div class="grid-2" style="margin-bottom:2rem;">
+      <div class="grid-2" style="margin-bottom:2.5rem;">
         <div class="card">
-          <h2><span class="icon">📗</span> Add Book</h2>
-          <div class="form-group"><label>Title</label><input type="text" id="book-title" placeholder="e.g. Clean Code" /></div>
-          <div class="form-group"><label>Author</label><input type="text" id="book-author" placeholder="e.g. Robert Martin" /></div>
-          <div class="form-group"><label>ISBN (optional)</label><input type="text" id="book-isbn" placeholder="978-..." /></div>
-          <div class="form-group"><label>Genre (optional)</label><input type="text" id="book-genre" placeholder="e.g. Software Engineering" /></div>
-          <div class="form-group"><label>Publisher (optional)</label><input type="text" id="book-publisher" placeholder="e.g. Prentice Hall" /></div>
-          <div class="form-group"><label>Total Copies</label><input type="number" id="book-copies" value="1" min="1" /></div>
-          <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+          <h2><i data-lucide="plus-circle"></i> Add Physical Book</h2>
+          
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" id="book-title" placeholder="e.g. Clean Code" />
+          </div>
+          <div class="form-group">
+            <label>Author *</label>
+            <input type="text" id="book-author" placeholder="e.g. Robert C. Martin" />
+          </div>
+          <div class="form-group">
+            <label>ISBN (Optional)</label>
+            <input type="text" id="book-isbn" placeholder="978-0132350884" />
+          </div>
+          <div class="grid-2" style="gap: 1rem;">
+            <div class="form-group">
+              <label>Genre</label>
+              <input type="text" id="book-genre" placeholder="Software Engineering" />
+            </div>
+            <div class="form-group">
+              <label>Publisher</label>
+              <input type="text" id="book-publisher" placeholder="Prentice Hall" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Total Physical Copies</label>
+            <input type="number" id="book-copies" value="1" min="1" />
+          </div>
+          
+          <button class="btn btn-primary" onclick="addBook()">
+            <i data-lucide="plus"></i> Add Book to Catalog
+          </button>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+        <div style="display:flex; flex-direction:column; gap:2rem;">
           <div class="card">
-            <h2><span class="icon">📱</span> Add E-Book</h2>
-            <div class="form-group"><label>Title</label><input type="text" id="ebook-title" placeholder="e.g. Python Tricks" /></div>
-            <div class="form-group"><label>Author</label><input type="text" id="ebook-author" placeholder="e.g. Dan Bader" /></div>
-            <div class="form-group"><label>Format</label>
-              <select id="ebook-format">
-                <option value="PDF">PDF</option>
-                <option value="EPUB">EPUB</option>
-                <option value="MOBI">MOBI</option>
-              </select>
+            <h2><i data-lucide="tablet"></i> Add E-Book (Digital)</h2>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" id="ebook-title" placeholder="e.g. Designing Data-Intensive Applications" />
             </div>
-            <div class="form-group"><label>Total Copies</label><input type="number" id="ebook-copies" value="10" min="1" /></div>
-            <button class="btn btn-primary" onclick="addEBook()">Add E-Book</button>
+            <div class="form-group">
+              <label>Author *</label>
+              <input type="text" id="ebook-author" placeholder="e.g. Martin Kleppmann" />
+            </div>
+            <div class="grid-2" style="gap: 1rem;">
+              <div class="form-group">
+                <label>Format</label>
+                <select id="ebook-format">
+                  <option value="PDF">PDF Document</option>
+                  <option value="EPUB">EPUB Ebook</option>
+                  <option value="MOBI">MOBI Kindle</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Copies</label>
+                <input type="number" id="ebook-copies" value="10" min="1" />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addEBook()">
+              <i data-lucide="plus"></i> Add E-Book
+            </button>
           </div>
 
           <div class="card">
-            <h2><span class="icon">📰</span> Add Journal</h2>
-            <div class="form-group"><label>Title</label><input type="text" id="journal-title" placeholder="e.g. Nature" /></div>
-            <div class="form-group"><label>Author / Publisher</label><input type="text" id="journal-author" placeholder="e.g. Springer" /></div>
-            <div class="form-group"><label>Volume</label><input type="number" id="journal-vol" placeholder="e.g. 12" /></div>
-            <div class="form-group"><label>Issue No.</label><input type="number" id="journal-issue" placeholder="e.g. 3" /></div>
-            <div class="form-group"><label>Total Copies</label><input type="number" id="journal-copies" value="2" min="1" /></div>
-            <button class="btn btn-primary" onclick="addJournal()">Add Journal</button>
+            <h2><i data-lucide="newspaper"></i> Add Academic Journal</h2>
+            <div class="form-group">
+              <label>Journal Title *</label>
+              <input type="text" id="journal-title" placeholder="e.g. ACM Communications" />
+            </div>
+            <div class="form-group">
+              <label>Publisher / Author *</label>
+              <input type="text" id="journal-author" placeholder="ACM" />
+            </div>
+            <div class="grid-3" style="gap: 0.75rem;">
+              <div class="form-group">
+                <label>Volume</label>
+                <input type="number" id="journal-vol" placeholder="Vol" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Issue No.</label>
+                <input type="number" id="journal-issue" placeholder="Issue" min="1" />
+              </div>
+              <div class="form-group">
+                <label>Copies</label>
+                <input type="number" id="journal-copies" value="2" min="1" />
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="addJournal()">
+              <i data-lucide="plus"></i> Add Journal
+            </button>
           </div>
         </div>
       </div>
 
       <div class="section-header">
-        <h2>⏰ Overdue Loans</h2>
-        <button class="btn btn-secondary" onclick="loadOverdue()">↻ Refresh</button>
+        <h2><i data-lucide="alert-triangle" style="color:var(--danger)"></i> Overdue System Audit</h2>
+        <button class="btn btn-secondary" onclick="loadOverdue()">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Audit List
+        </button>
       </div>
       <div id="overdue-list" class="scroll-list" style="max-height:none;"></div>
     </div>
@@ -612,11 +959,22 @@
 
 <script>
 // ===================================================================
-// CONFIG
+// CONFIG & INITIALIZATION
 // ===================================================================
 const API = 'http://localhost:8000/api/v1';
-let token = null;
-let currentRole = 'member';
+let token = localStorage.getItem('libtrack_token') || null;
+let currentRole = localStorage.getItem('libtrack_role') || 'member';
+let currentEmail = localStorage.getItem('libtrack_email') || '';
+let activeLoanTab = 'active'; // active or history
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (token) {
+    decodeAndShowApp(token);
+  } else {
+    logout();
+  }
+  lucide.createIcons();
+});
 
 // ===================================================================
 // AUTH HELPERS
@@ -636,18 +994,27 @@ async function apiFetch(path, opts = {}) {
 }
 
 // ===================================================================
-// TOAST
+// TOAST NOTIFICATIONS
 // ===================================================================
 function toast(msg, type = 'info') {
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
-  const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
-  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  
+  let iconName = 'info';
+  if (type === 'success') iconName = 'check-circle';
+  if (type === 'error') iconName = 'x-circle';
+  
+  el.innerHTML = `
+    <span class="toast-icon"><i data-lucide="${iconName}" style="width:18px;height:18px;"></i></span>
+    <span>${msg}</span>
+  `;
   document.getElementById('toast-container').appendChild(el);
+  lucide.createIcons();
+  
   setTimeout(() => {
     el.style.animation = 'slideOut 0.3s ease forwards';
     setTimeout(() => el.remove(), 300);
-  }, 3500);
+  }, 4000);
 }
 
 // ===================================================================
@@ -656,13 +1023,20 @@ function toast(msg, type = 'info') {
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
+  
+  const targetView = document.getElementById('view-' + name);
+  const targetNav = document.getElementById('nav-' + name);
+  
+  if (targetView) targetView.classList.add('active');
+  if (targetNav) targetNav.classList.add('active');
+  
   if (name === 'loans') loadMyLoans();
   if (name === 'dashboard') loadDashboard();
   if (name === 'reservations') loadMyReservations();
   if (name === 'catalog') loadAllItems();
   if (name === 'admin') loadOverdue();
+  
+  setTimeout(() => lucide.createIcons(), 50);
 }
 
 // ===================================================================
@@ -680,7 +1054,8 @@ async function login() {
   const btn = document.getElementById('login-btn');
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email || !password) return toast('Fill in all fields', 'error');
+  if (!email || !password) return toast('Please enter all required fields', 'error');
+  
   btn.innerHTML = '<span class="spinner"></span>';
   btn.disabled = true;
   try {
@@ -689,13 +1064,17 @@ async function login() {
       body: JSON.stringify({ email, password }),
     });
     token = data.access_token;
+    currentEmail = email;
+    localStorage.setItem('libtrack_token', token);
+    localStorage.setItem('libtrack_email', email);
     decodeAndShowApp(token);
-    toast('Signed in successfully!', 'success');
+    toast('Welcome to LibTrack!', 'success');
   } catch (e) {
-    toast(typeof e.detail === 'string' ? e.detail : 'Login failed', 'error');
+    toast(typeof e.detail === 'string' ? e.detail : 'Authentication failed', 'error');
   } finally {
-    btn.innerHTML = 'Sign In';
+    btn.innerHTML = `<span>Sign In</span><i data-lucide="arrow-right"></i>`;
     btn.disabled = false;
+    lucide.createIcons();
   }
 }
 
@@ -704,7 +1083,8 @@ async function register() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
-  if (!name || !email || !password) return toast('Fill in all fields', 'error');
+  if (!name || !email || !password) return toast('All fields must be filled', 'error');
+  
   btn.innerHTML = '<span class="spinner"></span>';
   btn.disabled = true;
   try {
@@ -712,14 +1092,15 @@ async function register() {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     });
-    toast('Account created! You can now sign in.', 'success');
+    toast('Account registered! You can now sign in.', 'success');
     switchAuthTab('login');
     document.getElementById('login-email').value = email;
   } catch (e) {
     toast(typeof e.detail === 'string' ? e.detail : 'Registration failed', 'error');
   } finally {
-    btn.innerHTML = 'Create Account';
+    btn.innerHTML = `<span>Create Account</span><i data-lucide="user-plus"></i>`;
     btn.disabled = false;
+    lucide.createIcons();
   }
 }
 
@@ -727,25 +1108,45 @@ function decodeAndShowApp(jwt) {
   try {
     const payload = JSON.parse(atob(jwt.split('.')[1]));
     currentRole = payload.role;
-  } catch { currentRole = 'member'; }
+    localStorage.setItem('libtrack_role', currentRole);
+  } catch { 
+    currentRole = 'member'; 
+    localStorage.setItem('libtrack_role', currentRole);
+  }
+  
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'grid';
-  const badge = document.getElementById('role-badge');
-  badge.textContent = currentRole;
+  
+  const roleBadge = document.getElementById('role-badge');
+  roleBadge.textContent = currentRole;
+  
+  const emailDisplay = document.getElementById('user-email');
+  if (emailDisplay) emailDisplay.textContent = currentEmail || localStorage.getItem('libtrack_email') || 'User';
+
   if (currentRole === 'admin') {
-    badge.classList.add('admin');
+    roleBadge.className = 'badge admin';
     document.getElementById('nav-admin').style.display = '';
+  } else {
+    roleBadge.className = 'badge member';
+    document.getElementById('nav-admin').style.display = 'none';
   }
+  
   loadDashboard();
 }
 
 function logout() {
   token = null;
   currentRole = 'member';
+  currentEmail = '';
+  localStorage.removeItem('libtrack_token');
+  localStorage.removeItem('libtrack_role');
+  localStorage.removeItem('libtrack_email');
+  
   document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('auth-screen').style.display = '';
+  document.getElementById('auth-screen').style.display = 'flex';
   document.getElementById('role-badge').classList.remove('admin');
   document.getElementById('nav-admin').style.display = 'none';
+  lucide.createIcons();
 }
 
 // ===================================================================
@@ -766,59 +1167,92 @@ async function loadDashboard() {
     const items = await apiFetch('/items/search');
     document.getElementById('stat-items').textContent = items.length;
 
-    // Recent loans
+    // Recent activity (shows last 4 checkouts)
     const container = document.getElementById('dash-loans');
-    const recent = [...loans].reverse().slice(0, 5);
+    const recent = [...loans].reverse().slice(0, 4);
     if (!recent.length) {
-      container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No loans yet</p></div>';
+      container.innerHTML = '<div class="empty"><div class="empty-icon"><i data-lucide="inbox"></i></div><p>No recent activity</p></div>';
     } else {
-      container.innerHTML = recent.map(l => loanCardHTML(l)).join('');
+      container.innerHTML = recent.map(l => loanCardHTML(l, false)).join('');
     }
-  } catch { /* silent */ }
+    lucide.createIcons();
+  } catch (e) {
+    /* silent default fallback */
+  }
 }
 
 // ===================================================================
-// CATALOG
+// CATALOG SEARCH & RENDERING
 // ===================================================================
 let catalogMode = 'search';
 function setCatalogMode(mode) {
   catalogMode = mode;
   ['search','alpha','range'].forEach(m => {
-    document.getElementById('mode-' + m).classList.toggle('active', m === mode);
-    document.getElementById('panel-' + m).style.display = m === mode ? '' : 'none';
+    const btn = document.getElementById('mode-' + m);
+    const pnl = document.getElementById('panel-' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+    if (pnl) pnl.style.display = m === mode ? '' : 'none';
   });
+  lucide.createIcons();
 }
 
 async function loadAllItems() {
-  await renderCatalogItems(await apiFetch('/items/search'));
+  try {
+    await renderCatalogItems(await apiFetch('/items/search'));
+  } catch (e) {
+    toast('Error loading items', 'error');
+  }
 }
+
 async function searchCatalog() {
   const title = document.getElementById('search-title').value.trim();
   const exact = document.getElementById('search-exact').checked;
   const params = title ? `?title=${encodeURIComponent(title)}&exact=${exact}` : '';
-  await renderCatalogItems(await apiFetch('/items/search' + params));
+  try {
+    await renderCatalogItems(await apiFetch('/items/search' + params));
+  } catch (e) {
+    toast(errMsg(e), 'error');
+  }
 }
+
 async function loadAlphabetical() {
-  await renderCatalogItems(await apiFetch('/items/alphabetical'));
+  try {
+    await renderCatalogItems(await apiFetch('/items/alphabetical'));
+  } catch (e) {
+    toast('Error loading alphabetical', 'error');
+  }
 }
+
 async function loadRange() {
-  const start = encodeURIComponent(document.getElementById('range-start').value);
-  const end   = encodeURIComponent(document.getElementById('range-end').value);
-  await renderCatalogItems(await apiFetch(`/items/range?start=${start}&end=${end}`));
+  const startVal = document.getElementById('range-start').value.trim();
+  const endVal = document.getElementById('range-end').value.trim();
+  if (!startVal || !endVal) return toast('Both starting and ending bounds are required', 'error');
+  
+  const start = encodeURIComponent(startVal);
+  const end   = encodeURIComponent(endVal);
+  try {
+    await renderCatalogItems(await apiFetch(`/items/range?start=${start}&end=${end}`));
+  } catch (e) {
+    toast('Error loading range search results', 'error');
+  }
 }
 
 async function renderCatalogItems(items) {
   const grid = document.getElementById('catalog-grid');
   document.getElementById('catalog-count').textContent = `(${items.length})`;
+  
   if (!items.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div><p>No items found</p></div>';
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i data-lucide="search-code"></i></div><p>No catalog items found matching parameters</p></div>';
+    lucide.createIcons();
     return;
   }
+  
   grid.innerHTML = items.map(item => {
     const typeCls = `type-${item.item_type}`;
     const typeLabel = item.item_type === 'ebook' ? 'E-Book' : item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1);
     const avail = item.available_copies > 0;
     const pct = Math.round((item.available_copies / item.total_copies) * 100);
+    
     return `<div class="item-card">
       <div class="item-card-header">
         <div>
@@ -828,17 +1262,51 @@ async function renderCatalogItems(items) {
         <span class="item-type-badge ${typeCls}">${typeLabel}</span>
       </div>
       <div class="item-card-meta">
-        <span class="meta-chip">ID: ${item.id}</span>
-        ${item.isbn ? `<span class="meta-chip">ISBN: ${esc(item.isbn)}</span>` : ''}
-        <span class="avail-chip ${avail ? 'avail-yes' : 'avail-no'}">${item.available_copies}/${item.total_copies} avail.</span>
+        <span class="meta-chip"><i data-lucide="hash" style="width:12px;height:12px;"></i>ID: ${item.id}</span>
+        ${item.isbn ? `<span class="meta-chip"><i data-lucide="barcode" style="width:12px;height:12px;"></i>ISBN: ${esc(item.isbn)}</span>` : ''}
+        <span class="avail-chip ${avail ? 'avail-yes' : 'avail-no'}">
+          <i data-lucide="${avail ? 'check' : 'alert-circle'}" style="width:12px;height:12px;"></i>
+          ${item.available_copies}/${item.total_copies} avail.
+        </span>
       </div>
       <div class="progress-row"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="item-card-actions">
-        <button class="btn btn-secondary" onclick="prefillCheckout(${item.id})">Checkout</button>
-        <button class="btn btn-secondary" onclick="prefillReserve(${item.id})">Reserve</button>
+        ${avail 
+          ? `<button class="btn btn-primary" onclick="directCheckout(${item.id})"><i data-lucide="check-square" style="width:14px;height:14px;"></i>Instant Loan</button>`
+          : `<button class="btn btn-secondary" style="color:var(--accent-2); border-color: rgba(34,211,238,0.3);" onclick="directReserve(${item.id})"><i data-lucide="clock" style="width:14px;height:14px;"></i>Reserve Copy</button>`
+        }
+        <button class="btn btn-secondary" style="flex:0; padding: 0.6rem;" title="Copy ID" onclick="navigator.clipboard.writeText(${item.id}); toast('ID copied: ${item.id}', 'info');">
+          <i data-lucide="copy" style="width:14px;height:14px;"></i>
+        </button>
       </div>
     </div>`;
   }).join('');
+  lucide.createIcons();
+}
+
+// Direct Actions
+async function directCheckout(itemId) {
+  try {
+    const loan = await apiFetch(`/loans/checkout/${itemId}`, { method: 'POST' });
+    toast(`Successfully checked out! Due on ${fmtDate(loan.due_date)}`, 'success');
+    if (catalogMode === 'search') searchCatalog();
+    else if (catalogMode === 'alpha') loadAlphabetical();
+    else loadRange();
+  } catch (e) {
+    toast(errMsg(e), 'error');
+  }
+}
+
+async function directReserve(itemId) {
+  try {
+    const res = await apiFetch(`/reservations/${itemId}`, { method: 'POST' });
+    toast(`Reserved item! You are #${res.queue_position} in the queue list.`, 'success');
+    if (catalogMode === 'search') searchCatalog();
+    else if (catalogMode === 'alpha') loadAlphabetical();
+    else loadRange();
+  } catch (e) {
+    toast(errMsg(e), 'error');
+  }
 }
 
 function prefillCheckout(id) {
@@ -851,29 +1319,49 @@ function prefillReserve(id) {
 }
 
 // ===================================================================
-// LOANS
+// LOANS & RETURN PROCESSING
 // ===================================================================
+function switchLoanView(viewName) {
+  activeLoanTab = viewName;
+  const tabActive = document.getElementById('loan-tab-active');
+  const tabHistory = document.getElementById('loan-tab-history');
+  
+  if (tabActive) tabActive.classList.toggle('active', viewName === 'active');
+  if (tabHistory) tabHistory.classList.toggle('active', viewName === 'history');
+  
+  loadMyLoans();
+}
+
 async function loadMyLoans() {
   const container = document.getElementById('loans-list');
   container.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto;"></div></div>';
   try {
     const loans = await apiFetch('/loans/my');
-    if (!loans.length) {
-      container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No loans yet. Check out a book from the catalog!</p></div>';
+    
+    // Filter based on active vs returned tabs
+    const filteredLoans = loans.filter(l => {
+      if (activeLoanTab === 'active') return !l.return_date;
+      return l.return_date;
+    });
+
+    if (!filteredLoans.length) {
+      const typeStr = activeLoanTab === 'active' ? 'active checkouts' : 'returned checkouts';
+      container.innerHTML = `<div class="empty"><div class="empty-icon"><i data-lucide="package-open"></i></div><p>No ${typeStr} found</p></div>`;
     } else {
-      container.innerHTML = loans.reverse().map(l => loanCardHTML(l, true)).join('');
+      container.innerHTML = filteredLoans.reverse().map(l => loanCardHTML(l, true)).join('');
     }
-  } catch {
-    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load loans</p></div>';
+    lucide.createIcons();
+  } catch (e) {
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to synchronize your loans registry</p></div>';
   }
 }
 
 async function checkoutItem() {
   const id = document.getElementById('checkout-item-id').value;
-  if (!id) return toast('Enter an item ID', 'error');
+  if (!id) return toast('Please input an item catalog ID', 'error');
   try {
     const loan = await apiFetch(`/loans/checkout/${id}`, { method: 'POST' });
-    toast(`Checked out! Loan #${loan.id} — due ${fmtDate(loan.due_date)}`, 'success');
+    toast(`Checked out item! Loan #${loan.id} — due ${fmtDate(loan.due_date)}`, 'success');
     document.getElementById('checkout-item-id').value = '';
     loadMyLoans();
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -881,10 +1369,10 @@ async function checkoutItem() {
 
 async function quickCheckout() {
   const id = document.getElementById('quick-item-id').value;
-  if (!id) return toast('Enter an item ID', 'error');
+  if (!id) return toast('Please input a valid item catalog ID', 'error');
   try {
     const loan = await apiFetch(`/loans/checkout/${id}`, { method: 'POST' });
-    toast(`Checked out! Loan #${loan.id} — due ${fmtDate(loan.due_date)}`, 'success');
+    toast(`Checked out item successfully! Loan ID is #${loan.id}. Due on ${fmtDate(loan.due_date)}`, 'success');
     document.getElementById('quick-item-id').value = '';
     loadDashboard();
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -892,41 +1380,85 @@ async function quickCheckout() {
 
 async function returnItem() {
   const id = document.getElementById('return-loan-id').value;
-  if (!id) return toast('Enter a loan ID', 'error');
+  if (!id) return toast('Please input a loan transaction ID', 'error');
   try {
     const loan = await apiFetch(`/loans/${id}/return`, { method: 'POST' });
-    const fineMsg = loan.fine_amount > 0 ? ` Fine: $${loan.fine_amount.toFixed(2)}` : '';
-    toast(`Returned successfully!${fineMsg}`, 'success');
+    const fineMsg = loan.fine_amount > 0 ? ` Fine calculated: $${loan.fine_amount.toFixed(2)}` : '';
+    toast(`Item returned successfully!${fineMsg}`, 'success');
     document.getElementById('return-loan-id').value = '';
     loadMyLoans();
   } catch (e) { toast(errMsg(e), 'error'); }
 }
 
-function returnLoan(id) {
-  document.getElementById('return-loan-id').value = id;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+async function directReturn(loanId) {
+  try {
+    const loan = await apiFetch(`/loans/${loanId}/return`, { method: 'POST' });
+    const fineMsg = loan.fine_amount > 0 ? ` Late fine evaluated: $${loan.fine_amount.toFixed(2)}` : ' No late charges applied.';
+    toast(`Book returned successfully!${fineMsg}`, 'success');
+    loadMyLoans();
+  } catch (e) {
+    toast(errMsg(e), 'error');
+  }
 }
 
-function loanCardHTML(l, showReturn = false) {
+function returnLoan(id) {
+  document.getElementById('return-loan-id').value = id;
+  window.scrollTo({ top: document.getElementById('return-loan-id').offsetTop - 120, behavior: 'smooth' });
+}
+
+function loanCardHTML(l, showReturnButton = false) {
   const active = !l.return_date;
   const statusCls = !active ? 'status-returned' : l.is_overdue ? 'status-overdue' : 'status-active';
   const statusTxt = !active ? 'Returned' : l.is_overdue ? 'Overdue' : 'Active';
-  const titleStr = l.item_title ? ` · <strong>"${esc(l.item_title)}"</strong>` : '';
+  const titleStr = l.item_title ? `<span class="loan-title-text">"${esc(l.item_title)}"</span>` : '';
+  
+  // Calculate relative countdown for active loans
+  let countdownHTML = '';
+  if (active) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const due = new Date(l.due_date);
+    due.setHours(0,0,0,0);
+    const diffTime = due - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      countdownHTML = `<span class="badge status-overdue" style="font-size:0.68rem; margin-top:0.4rem;"><i data-lucide="clock" style="width:12px;height:12px;"></i> ${Math.abs(diffDays)} days overdue</span>`;
+    } else if (diffDays === 0) {
+      countdownHTML = `<span class="badge status-waiting" style="font-size:0.68rem; margin-top:0.4rem;"><i data-lucide="alert-circle" style="width:12px;height:12px;"></i> Due Today</span>`;
+    } else {
+      countdownHTML = `<span class="badge status-active" style="font-size:0.68rem; margin-top:0.4rem; background:rgba(52,211,153,0.1); color:var(--success); border-color:rgba(52,211,153,0.15)"><i data-lucide="calendar" style="width:12px;height:12px;"></i> ${diffDays} days left</span>`;
+    }
+  }
+
   return `<div class="loan-card">
     <div class="loan-header">
-      <span class="loan-id">Loan #${l.id}${titleStr} · Item #${l.item_id}</span>
+      <div style="flex: 1;">
+        <span class="loan-id"><i data-lucide="hash" style="width:11px;height:11px;display:inline;"></i> Loan #${l.id} · Item ID: ${l.item_id}</span>
+        ${titleStr}
+        ${countdownHTML}
+      </div>
       <span class="loan-status ${statusCls}">${statusTxt}</span>
     </div>
-    <div class="loan-detail"><span>Checked out:</span><strong>${fmtDate(l.checkout_date)}</strong></div>
-    <div class="loan-detail"><span>Due:</span><strong>${fmtDate(l.due_date)}</strong></div>
-    ${l.return_date ? `<div class="loan-detail"><span>Returned:</span><strong>${fmtDate(l.return_date)}</strong></div>` : ''}
-    ${l.fine_amount > 0 ? `<div class="fine-badge">⚠ Fine: $${l.fine_amount.toFixed(2)}${l.fine_paid ? ' (Paid)' : ' (Unpaid)'}</div>` : ''}
-    ${showReturn && active ? `<button class="btn btn-success" style="margin-top:0.75rem;" onclick="returnLoan(${l.id})">↩ Return This Item</button>` : ''}
+    
+    <div class="loan-details-grid">
+      <div class="loan-detail"><span>Checkout:</span><strong>${fmtDate(l.checkout_date)}</strong></div>
+      <div class="loan-detail"><span>Due Date:</span><strong>${fmtDate(l.due_date)}</strong></div>
+      ${l.return_date ? `<div class="loan-detail"><span>Returned:</span><strong>${fmtDate(l.return_date)}</strong></div>` : ''}
+    </div>
+    
+    ${l.fine_amount > 0 ? `<div class="fine-badge"><i data-lucide="info" style="width:14px;height:14px;"></i>Fine: $${l.fine_amount.toFixed(2)}${l.fine_paid ? ' (Paid)' : ' (Unpaid)'}</div>` : ''}
+    ${showReturnButton && active ? `
+      <div style="margin-top: 1rem; display: flex; gap: 8px;">
+        <button class="btn btn-success" style="padding: 0.5rem 1rem; font-size:0.8rem;" onclick="directReturn(${l.id})">
+          <i data-lucide="undo-2" style="width:14px;height:14px;"></i> Return Book
+        </button>
+      </div>` : ''}
   </div>`;
 }
 
 // ===================================================================
-// RESERVATIONS
+// RESERVATIONS SYSTEM
 // ===================================================================
 async function loadMyReservations() {
   const container = document.getElementById('res-list');
@@ -934,21 +1466,22 @@ async function loadMyReservations() {
   try {
     const reservations = await apiFetch('/reservations/my');
     if (!reservations.length) {
-      container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No reservations yet. Reserve a book from the catalog!</p></div>';
+      container.innerHTML = '<div class="empty"><div class="empty-icon"><i data-lucide="bookmark"></i></div><p>No active reservations on record</p></div>';
     } else {
       container.innerHTML = reservations.map(res => reservationCardHTML(res)).join('');
     }
+    lucide.createIcons();
   } catch (e) {
-    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load reservations</p></div>';
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to synchronize your reservation queues</p></div>';
   }
 }
 
 async function reserveItem() {
   const id = document.getElementById('res-item-id').value;
-  if (!id) return toast('Enter an item ID', 'error');
+  if (!id) return toast('Please enter a valid item ID', 'error');
   try {
     const res = await apiFetch(`/reservations/${id}`, { method: 'POST' });
-    toast(`Reserved! Queue position: #${res.queue_position}`, 'success');
+    toast(`Successfully reserved! Queue sequence position: #${res.queue_position}`, 'success');
     document.getElementById('res-item-id').value = '';
     renderReservation(res);
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -956,16 +1489,22 @@ async function reserveItem() {
 
 function reservationCardHTML(res) {
   const statusCls = `status-${res.status}`;
-  const titleStr = res.item_title ? ` · <strong>"${esc(res.item_title)}"</strong>` : '';
+  const titleStr = res.item_title ? `<span class="loan-title-text">"${esc(res.item_title)}"</span>` : '';
   const canCancel = res.status === 'waiting' || res.status === 'ready';
+  
   return `<div class="loan-card" id="res-${res.id}">
     <div class="loan-header">
-      <span class="loan-id">Reservation #${res.id}${titleStr} · Item #${res.item_id}</span>
-      <span class="loan-status ${statusCls}">${res.status}</span>
+      <div style="flex: 1;">
+        <span class="loan-id"><i data-lucide="bookmark" style="width:11px;height:11px;display:inline;"></i> Reservation #${res.id} · Item ID: ${res.item_id}</span>
+        ${titleStr}
+      </div>
+      <span class="loan-status ${statusCls}">${res.status.toUpperCase()}</span>
     </div>
-    <div class="loan-detail"><span>Queue position:</span><strong>#${res.queue_position}</strong></div>
-    <div class="loan-detail"><span>Reserved on:</span><strong>${fmtDate(res.reservation_date)}</strong></div>
-    ${canCancel ? `<button class="btn btn-danger" style="margin-top:0.75rem;" onclick="cancelReservation(${res.id})">Cancel Reservation</button>` : ''}
+    <div class="loan-details-grid">
+      <div class="loan-detail"><span>Queue Priority:</span><strong>#${res.queue_position}</strong></div>
+      <div class="loan-detail"><span>Reserved On:</span><strong>${fmtDate(res.reservation_date)}</strong></div>
+    </div>
+    ${canCancel ? `<button class="btn btn-danger" style="margin-top:1rem; padding: 0.5rem 1rem; font-size:0.8rem; width:auto;" onclick="cancelReservation(${res.id})"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> Cancel Reservation</button>` : ''}
   </div>`;
 }
 
@@ -982,18 +1521,19 @@ function renderReservation(res) {
     temp.innerHTML = reservationCardHTML(res);
     container.prepend(temp.firstElementChild);
   }
+  lucide.createIcons();
 }
 
 async function cancelReservation(id) {
   try {
     const res = await apiFetch(`/reservations/${id}/cancel`, { method: 'POST' });
-    toast('Reservation cancelled', 'success');
+    toast('Reservation request cancelled successfully.', 'success');
     renderReservation(res);
   } catch (e) { toast(errMsg(e), 'error'); }
 }
 
 // ===================================================================
-// ADMIN
+// ADMINISTRATIVE PANEL CREATORS
 // ===================================================================
 async function addBook() {
   const payload = {
@@ -1004,10 +1544,10 @@ async function addBook() {
     publisher:  document.getElementById('book-publisher').value.trim() || null,
     total_copies: parseInt(document.getElementById('book-copies').value) || 1,
   };
-  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  if (!payload.title || !payload.author) return toast('Title and Author fields are required', 'error');
   try {
     const item = await apiFetch('/items/books', { method: 'POST', body: JSON.stringify(payload) });
-    toast(`"${item.title}" added to catalog (ID: ${item.id})`, 'success');
+    toast(`"${item.title}" successfully added (ID: ${item.id})`, 'success');
     ['book-title','book-author','book-isbn','book-genre','book-publisher'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('book-copies').value = '1';
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -1020,10 +1560,10 @@ async function addEBook() {
     file_format:  document.getElementById('ebook-format').value,
     total_copies: parseInt(document.getElementById('ebook-copies').value) || 10,
   };
-  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  if (!payload.title || !payload.author) return toast('Title and Author fields are required', 'error');
   try {
     const item = await apiFetch('/items/ebooks', { method: 'POST', body: JSON.stringify(payload) });
-    toast(`E-Book "${item.title}" added (ID: ${item.id})`, 'success');
+    toast(`Digital E-Book "${item.title}" successfully added (ID: ${item.id})`, 'success');
     ['ebook-title','ebook-author'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('ebook-copies').value = '10';
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -1037,10 +1577,10 @@ async function addJournal() {
     issue_number: parseInt(document.getElementById('journal-issue').value) || null,
     total_copies: parseInt(document.getElementById('journal-copies').value) || 2,
   };
-  if (!payload.title || !payload.author) return toast('Title and author are required', 'error');
+  if (!payload.title || !payload.author) return toast('Title and Author/Publisher are required', 'error');
   try {
     const item = await apiFetch('/items/journals', { method: 'POST', body: JSON.stringify(payload) });
-    toast(`Journal "${item.title}" added (ID: ${item.id})`, 'success');
+    toast(`Journal "${item.title}" successfully added (ID: ${item.id})`, 'success');
     ['journal-title','journal-author','journal-vol','journal-issue'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('journal-copies').value = '2';
   } catch (e) { toast(errMsg(e), 'error'); }
@@ -1052,12 +1592,13 @@ async function loadOverdue() {
   try {
     const loans = await apiFetch('/loans/overdue');
     if (!loans.length) {
-      container.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>No overdue loans — great news!</p></div>';
+      container.innerHTML = '<div class="empty"><div class="empty-icon"><i data-lucide="check-circle" style="color:var(--success);"></i></div><p>No overdue loans found in database audits</p></div>';
     } else {
       container.innerHTML = loans.map(l => loanCardHTML(l)).join('');
     }
-  } catch {
-    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to load</p></div>';
+    lucide.createIcons();
+  } catch (e) {
+    container.innerHTML = '<div class="empty"><p style="color:var(--danger)">Failed to perform system audit</p></div>';
   }
 }
 
@@ -1074,12 +1615,10 @@ function fmtDate(iso) {
 function errMsg(e) {
   if (typeof e.detail === 'string') return e.detail;
   if (Array.isArray(e.detail)) return e.detail.map(d => d.msg).join(', ');
-  return 'Something went wrong';
+  return 'Connection issue or invalid inputs';
 }
 
-// ===================================================================
-// KEYBOARD SHORTCUTS
-// ===================================================================
+// Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') {
     if (document.getElementById('login-form').style.display !== 'none') login();

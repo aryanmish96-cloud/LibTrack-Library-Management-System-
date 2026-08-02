@@ -7,29 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Run pytest
+  build-and-test:
+    name: Build & Test (Maven)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.11"
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run tests
-        run: pytest -v --tb=short
+      - name: Build and run tests
+        run: mvn -B clean verify
+        working-directory: backend
